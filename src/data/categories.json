@@ -1,0 +1,16 @@
+[
+  { "id": 1, "name": "Family" },
+  { "id": 2, "name": "Employment" },
+  { "id": 3, "name": "Business" },
+  { "id": 4, "name": "Finances" },
+  { "id": 5, "name": "Government" },
+  { "id": 6, "name": "Products & Services" },
+  { "id": 7, "name": "Foreclosure" },
+  { "id": 8, "name": "Child Support" },
+  { "id": 9, "name": "DUI/DWI" },
+  { "id": 10, "name": "Divorce" },
+  { "id": 11, "name": "Probate" },
+  { "id": 12, "name": "Contract" },
+  { "id": 13, "name": "Property" },
+  { "id": 14, "name": "Other Legal Categories" }
+]

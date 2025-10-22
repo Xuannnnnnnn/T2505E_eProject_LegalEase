@@ -1,0 +1,12 @@
+[
+  { "id": 1, "name": "HaNoi City" },
+  { "id": 2, "name": "Hue City" },
+  { "id": 3, "name": "LaiChau Province" },
+  { "id": 4, "name": "DienBien Province" },
+  { "id": 5, "name": "SonLa Province" },
+  { "id": 6, "name": "LangSon Province" },
+  { "id": 7, "name": "QuangNinh Province" },
+  { "id": 8, "name": "ThanhHoa Province" },
+  { "id": 9, "name": "NgheAn Province" },
+  { "id": 10, "name": "HaTinh Province" }
+]

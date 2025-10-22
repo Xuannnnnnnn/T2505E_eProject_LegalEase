@@ -1,0 +1,31 @@
+[
+  { "lawyer_id": 1, "specialization_id": 1 },
+  { "lawyer_id": 1, "specialization_id": 15 },
+
+  { "lawyer_id": 2, "specialization_id": 5 },
+  { "lawyer_id": 2, "specialization_id": 9 },
+
+  { "lawyer_id": 3, "specialization_id": 3 },
+  { "lawyer_id": 3, "specialization_id": 4 },
+
+  { "lawyer_id": 4, "specialization_id": 10 },
+  { "lawyer_id": 4, "specialization_id": 13 },
+
+  { "lawyer_id": 5, "specialization_id": 2 },
+  { "lawyer_id": 5, "specialization_id": 5 },
+
+  { "lawyer_id": 6, "specialization_id": 11 },
+  { "lawyer_id": 6, "specialization_id": 14 },
+
+  { "lawyer_id": 7, "specialization_id": 6 },
+  { "lawyer_id": 7, "specialization_id": 13 },
+
+  { "lawyer_id": 8, "specialization_id": 7 },
+  { "lawyer_id": 8, "specialization_id": 8 },
+
+  { "lawyer_id": 9, "specialization_id": 4 },
+  { "lawyer_id": 9, "specialization_id": 9 },
+
+  { "lawyer_id": 10, "specialization_id": 10 },
+  { "lawyer_id": 10, "specialization_id": 12 }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "title": "Health Standards for Military Service in Vietnam",
+    "excerpt": "The latest health standards for military service in Vietnam are defined under Circular...",
+    "image": "images/law1.jpg",
+    "content": "The Ministry of Health and the Ministry of National Defense have issued a new Circular outlining detailed health standards for military service. The regulation specifies physical and mental requirements for recruits, ensuring fair and transparent selection. Key updates include clearer vision and weight requirements, along with exemptions for specific chronic conditions."
+  },
+  {
+    "id": 2,
+    "title": "Corporate Income Tax Law 2025 Effective from 1 October – Key Changes",
+    "excerpt": "Corporate Income Tax Law 2025 takes effect from 1 October with new tax rates, incentives and...",
+    "image": "images/law2.jpg",
+    "content": "The 2025 Corporate Income Tax Law introduces significant updates, including a reduced standard tax rate from 20% to 18% for small enterprises and extended tax holidays for innovative startups. Companies are encouraged to reinvest profits into technology and green development to qualify for additional deductions."
+  },
+  {
+    "id": 3,
+    "title": "Online Administrative Procedures from 1 October 2025",
+    "excerpt": "From 1 October 2025, public administration centers stop accepting paper applications for...",
+    "image": "images/law3.jpg",
+    "content": "From October 2025, Vietnam will fully transition to digital public administration. Citizens and enterprises must submit all administrative documents through the National Service Portal. The move aims to improve efficiency, transparency, and reduce processing time for permits and licenses."
+  },
+  {
+    "id": 4,
+    "title": "Revocation of Representative Office License for Foreign Credit Institutions",
+    "excerpt": "Learn about the procedure for revocation of representative office license of foreign credit...",
+    "image": "images/law4.jpg",
+    "content": "Foreign credit institutions operating in Vietnam must now comply with updated reporting and compliance obligations. Failure to meet these requirements may lead to license revocation. The new decree sets clear deadlines for voluntary license surrender and legal liquidation procedures."
+  },
+  {
+    "id": 5,
+    "title": "Residence Regulation Amendment 2025–2026 for Foreign Citizens",
+    "excerpt": "Learn about the residence regulation amendment 2025–2026 and key changes to decrees on...",
+    "image": "images/law5.jpg",
+    "content": "The amended Residence Law introduces flexible visa categories for long-term investors and digital nomads. Foreign citizens will be allowed to extend residence up to five years with simplified online application steps, aiming to attract more skilled professionals to Vietnam."
+  },
+  {
+    "id": 6,
+    "title": "Tax Incentives for Small Businesses",
+    "excerpt": "Government introduces new policies to support SMEs through reduced tax burdens...",
+    "image": "images/law6.jpg",
+    "content": "The government is rolling out several tax incentive measures for small and medium enterprises (SMEs), such as exemption from personal income tax for micro-entrepreneurs, accelerated depreciation for equipment, and simplified quarterly reporting procedures."
+  },
+  {
+    "id": 7,
+    "title": "Intellectual Property Law 2025 Updates",
+    "excerpt": "Important revisions strengthen IP protection for creators and businesses...",
+    "image": "images/law7.jpg",
+    "content": "The updated IP Law strengthens enforcement mechanisms for patent and copyright violations. New provisions increase penalties for infringement and enhance protection for digital content creators, particularly in the technology and entertainment sectors."
+  },
+  {
+    "id": 8,
+    "title": "Environmental Law Compliance Guidelines",
+    "excerpt": "Key steps and deadlines for companies to align with 2025 environmental standards...",
+    "image": "images/law8.jpg",
+    "content": "The Environmental Law now mandates all manufacturing enterprises to file an annual compliance report and implement waste treatment systems by 2026. Companies failing to meet emission standards may face stricter sanctions and suspension of operations."
+  }
+]

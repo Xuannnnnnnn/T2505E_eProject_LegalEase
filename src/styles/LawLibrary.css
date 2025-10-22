@@ -1,0 +1,47 @@
+.law-carousel {
+  padding-bottom: 50px;
+}
+
+.law-carousel .carousel-control-prev,
+.law-carousel .carousel-control-next {
+  width: 5%;
+}
+
+.law-carousel .carousel-control-prev {
+  left: -50px;
+}
+
+.law-carousel .carousel-control-next {
+  right: -50px;
+}
+
+.law-carousel .carousel-control-prev-icon,
+.law-carousel .carousel-control-next-icon {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  background-size: 60%, 60%;
+}
+
+.law-carousel .carousel-control-prev-icon:hover,
+.law-carousel .carousel-control-next-icon:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.law-carousel .card img {
+  object-fit: cover;
+  height: 180px;
+}
+
+.law-carousel .btn-warning {
+  position: relative;
+  z-index: 2;
+  margin-top: 20px;
+  font-weight: 600;
+}
+
+.law-carousel .btn-warning:hover {
+  background-color: #f6c200;
+  color: #000;
+}

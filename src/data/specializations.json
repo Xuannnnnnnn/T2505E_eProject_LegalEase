@@ -1,0 +1,137 @@
+[
+  {
+    "specialization_id": 1,
+    "name": "Family Law Lawyers",
+    "description": "Tư vấn, soạn thảo và giải quyết tranh chấp dân sự như hợp đồng, bồi thường, thừa kế, quyền sở hữu.",
+    "category": "Family",
+    "status": "active",
+    "created_at": "2024-01-10T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 2,
+    "name": "Personal Injury Lawyers",
+    "description": "Bào chữa, bảo vệ quyền lợi người bị buộc tội, người bị hại, tư vấn các vấn đề liên quan đến tội phạm.",
+    "category": "Employment",
+    "status": "active",
+    "created_at": "2024-01-11T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 3,
+    "name": "Employment Lawyers",
+    "description": "Tư vấn kết hôn, ly hôn, chia tài sản, nuôi con, và các vấn đề pháp lý trong gia đình.",
+    "category": "Business",
+    "status": "active",
+    "created_at": "2024-01-12T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 4,
+    "name": "Real Estate Lawyers",
+    "description": "Tư vấn thành lập, tổ chức, hoạt động, sáp nhập, chia tách, giải thể doanh nghiệp.",
+    "category": "Finances",
+    "status": "active",
+    "created_at": "2024-01-13T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 5,
+    "name": "Criminal Defense Lawyers",
+    "description": "Tư vấn hợp đồng lao động, xử lý kỷ luật, tranh chấp lao động, quyền lợi người lao động và chủ sử dụng.",
+    "category": "Government",
+    "status": "active",
+    "created_at": "2024-01-14T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 6,
+    "name": "Bankruptcy Lawyers",
+    "description": "Giải quyết tranh chấp đất đai, thủ tục cấp sổ đỏ, chuyển nhượng, cho thuê, quy hoạch đất.",
+    "category": "Products & Services",
+    "status": "active",
+    "created_at": "2024-01-15T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 7,
+    "name": "Immigration Lawyers",
+    "description": "Khiếu nại, tố cáo, khởi kiện hành chính đối với quyết định, hành vi của cơ quan nhà nước.",
+    "category": "Foreclosure",
+    "status": "active",
+    "created_at": "2024-01-16T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 8,
+    "name": "Government Lawyers",
+    "description": "Đăng ký bản quyền, thương hiệu, sáng chế, xử lý vi phạm quyền sở hữu trí tuệ.",
+    "category": "Child Support",
+    "status": "active",
+    "created_at": "2024-01-17T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 9,
+    "name": "Liability Lawyers",
+    "description": "Tư vấn hợp đồng thương mại, logistics, nhượng quyền, tranh chấp thương mại trong nước và quốc tế.",
+    "category": "DUI/DWI",
+    "status": "active",
+    "created_at": "2024-01-18T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 10,
+    "name": "Business Law Lawyers",
+    "description": "Tư vấn pháp lý về thuế, kê khai, miễn giảm thuế, và xử lý các vấn đề liên quan đến kế toán doanh nghiệp.",
+    "category": "Divorce",
+    "status": "active",
+    "created_at": "2024-01-19T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 11,
+    "name": "Estate Lawyers",
+    "description": "Tư vấn tín dụng, hợp đồng vay, bảo lãnh, đầu tư, và xử lý nợ xấu.",
+    "category": "Probate",
+    "status": "active",
+    "created_at": "2024-01-20T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 12,
+    "name": "Intellectual Property Lawyers",
+    "description": "Tư vấn pháp lý về đánh giá tác động môi trường, xử lý vi phạm, cấp phép môi trường.",
+    "category": "Contract",
+    "status": "active",
+    "created_at": "2024-01-21T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 13,
+    "name": "Financial Lawyers",
+    "description": "Tư vấn, xử lý vi phạm, tai nạn giao thông, bồi thường thiệt hại và bảo hiểm.",
+    "category": "Property",
+    "status": "active",
+    "created_at": "2024-01-22T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 14,
+    "name": "Wills Probate Lawyers",
+    "description": "Hỗ trợ các vấn đề pháp lý liên quan đến hợp đồng, đầu tư, thương mại, và công dân nước ngoài.",
+    "category": "Other Legal Categories",
+    "status": "active",
+    "created_at": "2024-01-23T09:00:00",
+    "other": ""
+  },
+  {
+    "specialization_id": 15,
+    "name": "Divorce Lawyers",
+    "description": "Tư vấn pháp lý trong lĩnh vực công nghệ thông tin, bảo mật dữ liệu, giao dịch điện tử, AI và startup.",
+    "category": "Family",
+    "status": "active",
+    "created_at": "2024-01-24T09:00:00",
+    "other": ""
+  }
+]
