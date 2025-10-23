@@ -65,9 +65,6 @@ function App() {
           />
         </Routes>
       </main>
-
-      {/* 🌐 Footer dùng chung */}
-      <Footer />
     </Router>
   );
 }

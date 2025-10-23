@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaUserTie, FaCalendarAlt, FaMoneyBill, FaStickyNote } from "react-icons/fa";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
 
 function AppointmentHistoryPage() {
   const [appointments, setAppointments] = useState([]);
@@ -11,6 +13,8 @@ function AppointmentHistoryPage() {
   }, []);
 
   return (
+    <>
+    <Header/>
     <div className="container my-5">
       <div className="card shadow-lg border-0 rounded-4">
         <div className="card-header bg-primary text-white text-center">
@@ -52,6 +56,8 @@ function AppointmentHistoryPage() {
         </div>
       </div>
     </div>
+    <Footer/>
+    </>
   );
 }
 

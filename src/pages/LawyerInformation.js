@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import lawyers from "../data/lawyers.json";
 import categories from "../data/categories.json";
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaMoneyBill, FaCalendarAlt } from "react-icons/fa";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 function LawyerInformation() {
   const { id } = useParams();
@@ -64,117 +66,121 @@ function LawyerInformation() {
     );
 
   return (
-    <div className="container my-5">
-      <div className="card shadow-lg border-0 rounded-4 overflow-hidden">
-        <div className="row g-0">
-          <div className="col-md-5">
-            <img
-              src={`/${lawyer.image}`}
-              alt={lawyer.name}
-              className="img-fluid h-100 w-100"
-              style={{ objectFit: "cover" }}
-            />
-          </div>
-          <div className="col-md-7 p-4">
-            <h3 className="fw-bold text-primary">{lawyer.name}</h3>
-            <p className="text-muted mb-2">{lawyer.city}</p>
-            <p className="fw-semibold text-success">${lawyer.hourly_rate}/hour</p>
-            <p>{lawyer.profile_summary}</p>
+    <>
+    <Header/>
+      <div className="container my-5">
+        <div className="card shadow-lg border-0 rounded-4 overflow-hidden">
+          <div className="row g-0">
+            <div className="col-md-5">
+              <img
+                src={`/${lawyer.image}`}
+                alt={lawyer.name}
+                className="img-fluid h-100 w-100"
+                style={{ objectFit: "cover" }}
+              />
+            </div>
+            <div className="col-md-7 p-4">
+              <h3 className="fw-bold text-primary">{lawyer.name}</h3>
+              <p className="text-muted mb-2">{lawyer.city}</p>
+              <p className="fw-semibold text-success">${lawyer.hourly_rate}/hour</p>
+              <p>{lawyer.profile_summary}</p>
 
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowModal(true)}
-            >
-              <FaCalendarAlt className="me-2" /> Book Appointment
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div
-          className="modal fade show"
-          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 rounded-4">
-              <div className="modal-header bg-primary text-white">
-                <h5>Book Appointment with {lawyer.name}</h5>
-                <button
-                  className="btn-close btn-close-white"
-                  onClick={() => setShowModal(false)}
-                ></button>
-              </div>
-              <form onSubmit={handleSubmit}>
-                <div className="modal-body">
-                  <label>Date</label>
-                  <input
-                    type="date"
-                    className="form-control mb-3"
-                    name="appointment_date"
-                    value={form.appointment_date}
-                    onChange={handleChange}
-                    required
-                  />
-
-                  <label>Time</label>
-                  <input
-                    type="time"
-                    className="form-control mb-3"
-                    name="appointment_time"
-                    value={form.appointment_time}
-                    onChange={handleChange}
-                    required
-                  />
-
-                  <label>Duration (minutes)</label>
-                  <input
-                    type="number"
-                    className="form-control mb-3"
-                    name="slot_duration"
-                    min="0"
-                    step="30"
-                    value={form.slot_duration}
-                    onChange={handleChange}
-                    required
-                  />
-
-                  <label>Total Price ($)</label>
-                  <input
-                    type="text"
-                    className="form-control mb-3 fw-bold text-success"
-                    value={form.total_price.toFixed(2)}
-                    disabled
-                  />
-
-                  <label>Notes</label>
-                  <textarea
-                    className="form-control"
-                    rows="3"
-                    name="notes"
-                    value={form.notes}
-                    onChange={handleChange}
-                  ></textarea>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary"
-                    onClick={() => setShowModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    Confirm
-                  </button>
-                </div>
-              </form>
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowModal(true)}
+              >
+                <FaCalendarAlt className="me-2" /> Book Appointment
+              </button>
             </div>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Modal */}
+        {showModal && (
+          <div
+            className="modal fade show"
+            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content border-0 rounded-4">
+                <div className="modal-header bg-primary text-white">
+                  <h5>Book Appointment with {lawyer.name}</h5>
+                  <button
+                    className="btn-close btn-close-white"
+                    onClick={() => setShowModal(false)}
+                  ></button>
+                </div>
+                <form onSubmit={handleSubmit}>
+                  <div className="modal-body">
+                    <label>Date</label>
+                    <input
+                      type="date"
+                      className="form-control mb-3"
+                      name="appointment_date"
+                      value={form.appointment_date}
+                      onChange={handleChange}
+                      required
+                    />
+
+                    <label>Time</label>
+                    <input
+                      type="time"
+                      className="form-control mb-3"
+                      name="appointment_time"
+                      value={form.appointment_time}
+                      onChange={handleChange}
+                      required
+                    />
+
+                    <label>Duration (minutes)</label>
+                    <input
+                      type="number"
+                      className="form-control mb-3"
+                      name="slot_duration"
+                      min="0"
+                      step="30"
+                      value={form.slot_duration}
+                      onChange={handleChange}
+                      required
+                    />
+
+                    <label>Total Price ($)</label>
+                    <input
+                      type="text"
+                      className="form-control mb-3 fw-bold text-success"
+                      value={form.total_price.toFixed(2)}
+                      disabled
+                    />
+
+                    <label>Notes</label>
+                    <textarea
+                      className="form-control"
+                      rows="3"
+                      name="notes"
+                      value={form.notes}
+                      onChange={handleChange}
+                    ></textarea>
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btn-primary">
+                      Confirm
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <Footer/>
+    </>
   );
 }
 
