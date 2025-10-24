@@ -80,6 +80,12 @@ const Header = () => {
               >
                 Log In
               </Nav.Link>
+              <Nav.Link
+                onClick={() => handleNavigation('/registercustomer')}
+                className="text-dark fw-semibold cursor-pointer"
+              >
+                Register
+              </Nav.Link>
 
               {/* Biểu tượng Search */}
               <FaSearch

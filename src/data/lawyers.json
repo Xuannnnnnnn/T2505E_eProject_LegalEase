@@ -2,6 +2,7 @@
   {
     "lawyer_id": 1,
     "name": "Tika B. Basnet",
+    "email": "tika@gmail.com",
     "dob": "1984-05-10",
     "gender": "Male",
     "phone": "+975-1234567",
@@ -24,6 +25,7 @@
   {
     "lawyer_id": 2,
     "name": "Sonam Tenzi",
+    "email": "tenzi@gmail.com",
     "dob": "1987-11-23",
     "gender": "Female",
     "phone": "+975-9876543",
@@ -46,6 +48,7 @@
   {
     "lawyer_id": 3,
     "name": "Yves Constant AMANI",
+    "email": "amani@gmail.com",
     "dob": "1978-08-30",
     "gender": "Male",
     "phone": "+224-7771234",

@@ -1,69 +1,122 @@
-import { Container, Row, Col, Form, Button, Card } from 'react-bootstrap';
-import { FaGoogle, FaLinkedinIn } from 'react-icons/fa'; 
-import { Link } from 'react-router-dom';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+// Login.js
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Container, Card, Form, Button, Alert } from "react-bootstrap";
+import lawyersData from "../data/lawyers.json";
+import customersData from "../data/customers.json";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
-function Login() {
+const Login = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  // Khi mở trang login, nếu đã login thì chuyển hướng
+  useEffect(() => {
+    const loggedUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    if (loggedUser) {
+      if (loggedUser.role === "lawyer") navigate("/lawyer-dashboard");
+      else if (loggedUser.role === "customer") navigate("/customer-dashboard");
+    }
+  }, [navigate]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setError("");
+
+    // Lấy dữ liệu từ localStorage hoặc file JSON
+    const lawyers = JSON.parse(localStorage.getItem("lawyers")) || lawyersData;
+    const customers =
+      JSON.parse(localStorage.getItem("customers")) || customersData;
+
+    // Tìm lawyer hoặc customer
+    const foundLawyer = lawyers.find(
+      (user) =>
+        (user.email || user.gmail) === email &&
+        (user.password || "123456") === password
+    );
+    const foundCustomer = customers.find(
+      (user) =>
+        (user.email || user.gmail) === email &&
+        (user.password || "123456") === password
+    );
+
+    if (foundLawyer) {
+      foundLawyer.role = "lawyer";
+      localStorage.setItem("loggedInUser", JSON.stringify(foundLawyer));
+      navigate("/lawyer-dashboard");
+    } else if (foundCustomer) {
+      foundCustomer.role = "customer";
+      localStorage.setItem("loggedInUser", JSON.stringify(foundCustomer));
+      navigate("/customer-dashboard");
+    } else {
+      setError("Email hoặc mật khẩu không đúng.");
+    }
+  };
+
   return (
     <>
-    <Header/>
-    
-    <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh', padding: '2rem 0' }}>
-      {/* ĐÃ TĂNG CHIỀU RỘNG CARD LÊN 32rem ĐỂ CHỨA CÁC NÚT SOCIAL LOGIN */}
-      <Card style={{ width: '32rem', padding: '2.5rem 2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-        <Card.Body>
-          <h4 className="text-center mb-5 fw-bold text-dark" style={{ letterSpacing: '1px' }}>LOG IN</h4>
-          
-          <Form>
-            {/* Email hoặc Tên Tài khoản */}
-            <Form.Group className="mb-3" controlId="formUserIdentifier">
-              <Form.Label className="fw-bold text-secondary" style={{ fontSize: '0.9rem' }}>EMAIL HOẶC TÊN TÀI KHOẢN</Form.Label>
-              <Form.Control type="text" placeholder="Nhập email hoặc tên tài khoản" size="md" /> 
-            </Form.Group>
+      <Header />
+      <Container
+        className="d-flex justify-content-center align-items-center"
+        style={{
+          minHeight: "calc(100vh - 120px)",
+          padding: "3rem 0",
+          backgroundColor: "#f8f9fa",
+        }}
+      >
+        <Card style={{ width: "35rem", padding: "2rem 2.5rem", borderRadius: "12px", boxShadow: "0 10px 30px rgba(0,0,0,0.1)" }}>
+          <Card.Body>
+            <h4 className="text-center mb-5 fw-bolder" style={{ color: "#17a2b8", textTransform: "uppercase" }}>
+              LOGIN
+            </h4>
 
-            {/* Password */}
-            <Form.Group className="mb-3" controlId="formBasicPassword">
-              <Form.Label className="fw-bold text-secondary" style={{ fontSize: '0.9rem' }}>PASSWORD</Form.Label>
-              <Form.Control type="password" size="lg" />
-            </Form.Group>
+            {error && <Alert variant="danger">{error}</Alert>}
 
-            {/* Remember Me & Forgot Password */}
-            <div className="d-flex justify-content-between align-items-center mb-4 mt-3">
-              <Form.Group controlId="formBasicCheckbox">
-                <Form.Check type="checkbox" label="Remember Me" className="text-muted" />
+            <Form onSubmit={handleLogin}>
+              <Form.Group className="mb-3">
+                <Form.Label>Email</Form.Label>
+                <Form.Control
+                  type="email"
+                  placeholder="Nhập email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </Form.Group>
-              <a href="/forgot-password" className="text-info fw-semibold" style={{ fontSize: '0.9rem', color: '#17a2b8' }}>Forgot your password?</a>
-            </div>
 
-            {/* Login Button */}
-            <div className="d-grid gap-2 mb-4">
-              <Button 
-                variant="info" 
-                type="submit" 
-                size="lg" 
-                className="py-2"
-                style={{ backgroundColor: '#17a2b8', borderColor: '#17a2b8', fontWeight: 'bold' }}
-              >
-                LOGIN
-              </Button>
-            </div>
-          </Form>
-          
-          {/* Đường phân cách */}
-          <div className="mb-4" style={{ borderBottom: '1px solid #e0e0e0' }}></div>
-          
-          {/* Sign Up Link (Link Đăng ký) */}
-          <div className="text-center mt-3">
-            <p className="mb-2 text-muted" style={{ fontSize: '0.9rem' }}>Don't have an account yet?</p>
-            <Link to="/register" className="fw-bold" style={{ color: '#17a2b8', textDecoration: 'none', fontSize: '1rem' }}>SIGN UP NOW</Link>
-          </div>
-        </Card.Body>
-      </Card>
-    </Container>
-    <Footer/>
+              <Form.Group className="mb-4">
+                <Form.Label>Password</Form.Label>
+                <Form.Control
+                  type="password"
+                  placeholder="Nhập mật khẩu"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </Form.Group>
+
+              <div className="d-grid gap-2 mb-4">
+                <Button variant="info" type="submit" className="py-2 text-uppercase fw-bold">
+                  Login
+                </Button>
+              </div>
+
+              <p className="text-center text-muted" style={{ fontSize: "0.9rem" }}>
+                Chưa có tài khoản?{" "}
+                <Link to="/registercustomer" className="fw-bold text-info">
+                  Đăng ký ngay
+                </Link>
+              </p>
+            </Form>
+          </Card.Body>
+        </Card>
+      </Container>
+      <Footer />
     </>
   );
-}
+};
 
 export default Login;

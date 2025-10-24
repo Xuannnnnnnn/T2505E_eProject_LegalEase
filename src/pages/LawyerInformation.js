@@ -1,61 +1,61 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import lawyers from "../data/lawyers.json";
-import categories from "../data/categories.json";
-import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaMoneyBill, FaCalendarAlt } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { FaCalendarAlt } from "react-icons/fa";
+
+// Component hiển thị lịch slot cho khách chọn (dựa vào luật sư đã cấu hình)
+const CustomerSchedule = ({ lawyerId, selectedDate, onSelectSlot }) => {
+  const [slotsStatus, setSlotsStatus] = useState({});
+  const slots = ["09:00", "11:00", "14:00", "16:00"];
+
+  useEffect(() => {
+    const schedules = JSON.parse(localStorage.getItem("lawyerSchedules")) || {};
+    setSlotsStatus(schedules[selectedDate] || {});
+  }, [selectedDate, lawyerId]);
+
+  return (
+    <div className="mb-3">
+      <label>Select Time Slot:</label>
+      <div className="d-flex flex-wrap gap-2 mt-2">
+        {slots.map((slot) => {
+          const status = slotsStatus[slot] || "available";
+          return (
+            <button
+              key={slot}
+              type="button"
+              className={`btn ${
+                status === "available" ? "btn-outline-primary" : "btn-secondary disabled"
+              }`}
+              onClick={() => onSelectSlot(slot, selectedDate)}
+            >
+              {slot} ({status})
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 function LawyerInformation() {
   const { id } = useParams();
   const navigate = useNavigate();
   const lawyer = lawyers.find((l) => l.lawyer_id === parseInt(id));
-  const [showModal, setShowModal] = useState(false);
 
+  const [showModal, setShowModal] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [form, setForm] = useState({
     appointment_date: "",
     appointment_time: "",
-    specialization_id: "",
-    slot_duration: 0,
+    slot_duration: 60,
     total_price: 0,
     notes: "",
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    const newForm = { ...form, [name]: value };
-    if (name === "slot_duration") {
-      const total = (lawyer.hourly_rate * value) / 60;
-      newForm.total_price = total;
-    }
-    setForm(newForm);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    const fullDateTime = `${form.appointment_date}T${form.appointment_time}`;
-    const appointmentData = {
-      lawyer_id: lawyer.lawyer_id,
-      lawyer_name: lawyer.name,
-      specialization_id: parseInt(form.specialization_id),
-      appointment_date: fullDateTime,
-      slot_duration: parseInt(form.slot_duration),
-      hourly_rate: lawyer.hourly_rate,
-      total_price: parseFloat(form.total_price),
-      status: "pending",
-      notes: form.notes,
-    };
-
-    alert(
-      `✅ Appointment confirmed with ${lawyer.name}\nDate: ${form.appointment_date} ${form.appointment_time}\nTotal: $${form.total_price.toFixed(2)}`
-    );
-
-    navigate("/payment", { state: { appointment: appointmentData } });
-    setShowModal(false);
-  };
-
-  if (!lawyer)
+  if (!lawyer) {
     return (
       <div className="container text-center py-5">
         <h3 className="text-danger">Lawyer not found.</h3>
@@ -64,10 +64,129 @@ function LawyerInformation() {
         </Link>
       </div>
     );
+  }
+
+  // Chọn slot lịch
+  const handleSelectSlot = (slot, date) => {
+    const total = (lawyer.hourly_rate * form.slot_duration) / 60;
+    setForm({
+      ...form,
+      appointment_date: date,
+      appointment_time: slot,
+      total_price: total,
+    });
+  };
+
+  // Xử lý submit appointment
+  const handleSubmit = () => {
+    const customer = JSON.parse(localStorage.getItem("loggedInUser"));
+
+    if (!customer) {
+      setShowLogin(true);
+      return;
+    }
+
+    const newAppointment = {
+      lawyer_id: lawyer.lawyer_id,
+      lawyer_name: lawyer.name,
+      customer_id: customer.customer_id,
+      customer_name: customer.fullname,
+      appointment_date: form.appointment_date,
+      appointment_time: form.appointment_time,
+      slot_duration: parseInt(form.slot_duration),
+      hourly_rate: lawyer.hourly_rate,
+      total_price: parseFloat(form.total_price),
+      notes: form.notes,
+      status: "pending",
+    };
+
+    const appointments = JSON.parse(localStorage.getItem("appointments")) || [];
+    appointments.push(newAppointment);
+    localStorage.setItem("appointments", JSON.stringify(appointments));
+
+    // Khi khách đặt slot thành công → tự động đánh dấu bận trong lịch luật sư
+    const schedules = JSON.parse(localStorage.getItem("lawyerSchedules")) || {};
+    const daySchedule = schedules[form.appointment_date] || {};
+    daySchedule[form.appointment_time] = "busy";
+    schedules[form.appointment_date] = daySchedule;
+    localStorage.setItem("lawyerSchedules", JSON.stringify(schedules));
+
+    alert(
+      `✅ Appointment confirmed with ${lawyer.name}\nDate: ${form.appointment_date} ${form.appointment_time}\nTotal: $${form.total_price.toFixed(
+        2
+      )}`
+    );
+
+    navigate("/payment", { state: { appointment: newAppointment } });
+    setShowModal(false);
+  };
+
+  // Modal login
+  const LoginModal = ({ onClose, onLoginSuccess }) => {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    const handleLogin = (e) => {
+      e.preventDefault();
+      const customers = JSON.parse(localStorage.getItem("customers")) || [];
+      const user = customers.find(
+        (c) => c.email === email && c.password === password
+      );
+
+      if (user) {
+        localStorage.setItem("loggedInUser", JSON.stringify(user));
+        onLoginSuccess();
+        onClose();
+      } else {
+        alert("Email hoặc mật khẩu không đúng!");
+      }
+    };
+
+    return (
+      <div
+        className="modal fade show"
+        style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+      >
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content p-3 rounded-4">
+            <h5>Login to Continue</h5>
+            <form onSubmit={handleLogin}>
+              <input
+                type="email"
+                placeholder="Email"
+                className="form-control mb-2"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                className="form-control mb-2"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button type="submit" className="btn btn-primary w-100">
+                Login
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary w-100 mt-2"
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
-    <Header/>
+      <Header />
       <div className="container my-5">
         <div className="card shadow-lg border-0 rounded-4 overflow-hidden">
           <div className="row g-0">
@@ -82,7 +201,9 @@ function LawyerInformation() {
             <div className="col-md-7 p-4">
               <h3 className="fw-bold text-primary">{lawyer.name}</h3>
               <p className="text-muted mb-2">{lawyer.city}</p>
-              <p className="fw-semibold text-success">${lawyer.hourly_rate}/hour</p>
+              <p className="fw-semibold text-success">
+                ${lawyer.hourly_rate}/hour
+              </p>
               <p>{lawyer.profile_summary}</p>
 
               <button
@@ -95,7 +216,7 @@ function LawyerInformation() {
           </div>
         </div>
 
-        {/* Modal */}
+        {/* Modal Book Appointment */}
         {showModal && (
           <div
             className="modal fade show"
@@ -110,37 +231,42 @@ function LawyerInformation() {
                     onClick={() => setShowModal(false)}
                   ></button>
                 </div>
-                <form onSubmit={handleSubmit}>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSubmit();
+                  }}
+                >
                   <div className="modal-body">
-                    <label>Date</label>
+                    <label>Select Date:</label>
                     <input
                       type="date"
                       className="form-control mb-3"
-                      name="appointment_date"
-                      value={form.appointment_date}
-                      onChange={handleChange}
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
                       required
                     />
 
-                    <label>Time</label>
-                    <input
-                      type="time"
-                      className="form-control mb-3"
-                      name="appointment_time"
-                      value={form.appointment_time}
-                      onChange={handleChange}
-                      required
+                    <CustomerSchedule
+                      lawyerId={lawyer.lawyer_id}
+                      selectedDate={selectedDate}
+                      onSelectSlot={handleSelectSlot}
                     />
 
                     <label>Duration (minutes)</label>
                     <input
                       type="number"
                       className="form-control mb-3"
-                      name="slot_duration"
-                      min="0"
+                      min="30"
                       step="30"
                       value={form.slot_duration}
-                      onChange={handleChange}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          slot_duration: parseInt(e.target.value),
+                          total_price: (lawyer.hourly_rate * e.target.value) / 60,
+                        })
+                      }
                       required
                     />
 
@@ -156,9 +282,10 @@ function LawyerInformation() {
                     <textarea
                       className="form-control"
                       rows="3"
-                      name="notes"
                       value={form.notes}
-                      onChange={handleChange}
+                      onChange={(e) =>
+                        setForm({ ...form, notes: e.target.value })
+                      }
                     ></textarea>
                   </div>
                   <div className="modal-footer">
@@ -178,8 +305,16 @@ function LawyerInformation() {
             </div>
           </div>
         )}
+
+        {/* Modal Login */}
+        {showLogin && (
+          <LoginModal
+            onClose={() => setShowLogin(false)}
+            onLoginSuccess={handleSubmit}
+          />
+        )}
       </div>
-      <Footer/>
+      <Footer />
     </>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Container, Row, Col, Button, Nav } from "react-bootstrap";
+import { Link } from "react-router-dom";
 
 const clientSteps = [
   {
@@ -96,12 +97,15 @@ const HowItWorks = () => {
         {/* Nút đăng ký dành cho Attorneys */}
         {activeTab === "attorneys" && (
           <div className="text-center mt-3">
-            <Button
-              variant="warning"
-              className="fw-semibold px-4 py-2 shadow-sm"
-            >
-              Register
-            </Button>
+            <Link to="/registerlawyer" style={{ textDecoration: 'none' }}>
+              <Button
+                style={{ backgroundColor: '#FFC600', borderColor: '#FFC600', color: '#0c0c0cff' }}
+                className="fw-semibold px-4 py-2 shadow-sm"
+              >
+                Register
+              </Button>
+            </Link>
+
           </div>
         )}
       </Container>

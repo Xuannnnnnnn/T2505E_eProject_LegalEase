@@ -394,7 +394,10 @@ body {
   color: #f8d90f !important;
 }
 
-
+.law-carousel .card img {
+  border: none !important;
+  outline: none !important;
+}
 
 
 

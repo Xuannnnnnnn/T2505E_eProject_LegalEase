@@ -1,0 +1,47 @@
+[
+  {
+    "customer_id": 1,
+    "username": "minhc",
+    "email": "c@gmail.com",
+    "password_hash": "$2b$10$XyZ1PaSSw0rd123HashDemo",
+    "fullname": "Minh Pham",
+    "phone": "0905123456",
+    "address": "123 Nguyen Trai, HaNoi",
+    "dob": "1992-05-10",
+    "gender": "Male",
+    "register_date": "2024-02-15",
+    "last_login": "2025-10-20",
+    "status": "Active",
+    "other": ""
+  },
+  {
+    "customer_id": 2,
+    "username": "levand",
+    "email": "d@gmail.com",
+    "password_hash": "$2b$10$ExampleHashValueForDemo",
+    "fullname": "Lê Văn D",
+    "phone": "0912333444",
+    "address": "45 Le Loi, HoChiMinh City",
+    "dob": "1990-11-22",
+    "gender": "Male",
+    "register_date": "2023-12-08",
+    "last_login": "2025-09-28",
+    "status": "Inactive",
+    "other": ""
+  },
+  {
+    "customer_id": 3,
+    "username": "ngoctt",
+    "email": "ngoc@gmail.com",
+    "password_hash": "$2b$10$HashExampleNgocTT",
+    "fullname": "Ngoc Tran",
+    "phone": "0988777666",
+    "address": "22 Hai Ba Trung, HaNoi City",
+    "dob": "1995-07-01",
+    "gender": "Female",
+    "register_date": "2024-06-10",
+    "last_login": "2025-10-21",
+    "status": "Active",
+    "other": "VIP"
+  }
+]
