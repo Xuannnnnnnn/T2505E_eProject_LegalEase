@@ -8,8 +8,16 @@ const CustomerDashboard = () => {
   const [loggedCustomer, setLoggedCustomer] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [appointments, setAppointments] = useState([]);
+  const [filteredAppointments, setFilteredAppointments] = useState([]);
+  const [lawyers, setLawyers] = useState([]);
+  const [selectedLawyer, setSelectedLawyer] = useState(null);
 
-  // ✅ useEffect đầu tiên: kiểm tra đăng nhập
+  // Search filters
+  const [statusFilter, setStatusFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  // ✅ Check login
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("loggedInUser"));
     const role = localStorage.getItem("userRole");
@@ -18,11 +26,10 @@ const CustomerDashboard = () => {
       window.location.href = "/login";
       return;
     }
-
     setLoggedCustomer(storedUser);
   }, []);
 
-  // ✅ useEffect thứ hai: tải danh sách cuộc hẹn của customer
+  // ✅ Load appointments
   useEffect(() => {
     if (!loggedCustomer) return;
 
@@ -31,27 +38,58 @@ const CustomerDashboard = () => {
       (a) => a.customer_id === loggedCustomer.customer_id
     );
     setAppointments(myAppointments);
+    setFilteredAppointments(myAppointments);
   }, [loggedCustomer]);
 
-  // ✅ Hàm đặt lịch mới
+  // ✅ Load lawyers
+  useEffect(() => {
+    const storedLawyers = JSON.parse(localStorage.getItem("lawyers"));
+    if (storedLawyers && storedLawyers.length > 0) {
+      setLawyers(storedLawyers);
+    } else {
+      fetch("/data/lawyers.json")
+        .then((res) => res.json())
+        .then((data) => {
+          setLawyers(data);
+          localStorage.setItem("lawyers", JSON.stringify(data));
+        })
+        .catch((err) => console.error("Error loading lawyers.json:", err));
+    }
+  }, []);
+
+  // ✅ Add new appointment
   const handleNewAppointment = (newAppointment) => {
     const updated = [...appointments, newAppointment];
     setAppointments(updated);
+    setFilteredAppointments(updated);
 
-    // Cập nhật vào localStorage
     const allAppointments = JSON.parse(localStorage.getItem("appointments")) || [];
     allAppointments.push(newAppointment);
     localStorage.setItem("appointments", JSON.stringify(allAppointments));
   };
 
-  // ✅ Hàm đăng xuất
+  // ✅ Filter search
+  const handleSearch = () => {
+    let filtered = [...appointments];
+    if (statusFilter) {
+      filtered = filtered.filter((a) => a.status === statusFilter);
+    }
+    if (fromDate) {
+      filtered = filtered.filter((a) => a.appointment_date >= fromDate);
+    }
+    if (toDate) {
+      filtered = filtered.filter((a) => a.appointment_date <= toDate);
+    }
+    setFilteredAppointments(filtered);
+  };
+
+  // ✅ Logout
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("userRole");
     window.location.href = "/login";
   };
 
-  // ✅ Khi chưa load xong dữ liệu
   if (!loggedCustomer) {
     return <div className="text-center mt-5 text-secondary">Loading dashboard...</div>;
   }
@@ -77,14 +115,85 @@ const CustomerDashboard = () => {
 
         {activeTab === "appointments" && (
           <div>
+            {/* 🔹 Booking Form First */}
             <h5>Book a New Appointment</h5>
+            <div className="mb-3">
+              <label className="form-label">Select Lawyer</label>
+              <select
+                className="form-select"
+                value={selectedLawyer ? selectedLawyer.lawyer_id : ""}
+                onChange={(e) => {
+                  const id = parseInt(e.target.value);
+                  const lawyer = lawyers.find((l) => l.lawyer_id === id);
+                  setSelectedLawyer(lawyer);
+                }}
+              >
+                <option value="">-- Choose a Lawyer --</option>
+                {lawyers.map((l) => (
+                  <option key={l.lawyer_id} value={l.lawyer_id}>
+                    {l.name} - ${l.hourly_rate}/h
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <AppointmentForm
+              lawyer={selectedLawyer}
               customer={loggedCustomer}
               onNewAppointment={handleNewAppointment}
             />
 
-            <h5 className="mt-4">Your Appointments</h5>
-            <AppointmentsTable appointments={appointments} role="customer" />
+            {/* 🔹 Search Section Below */}
+            <div className="mt-5 border rounded p-3 bg-light">
+              <h5 className="mb-3">Search Appointments</h5>
+
+              <div className="row g-3">
+                <div className="col-md-3">
+                  <label>Status</label>
+                  <select
+                    className="form-select"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                <div className="col-md-3">
+                  <label>From Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="col-md-3">
+                  <label>To Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="col-md-3 d-flex align-items-end">
+                  <button className="btn btn-primary w-100" onClick={handleSearch}>
+                    Search
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 🔹 Appointment List */}
+            <h5 className="mt-4">My Appointments</h5>
+            <AppointmentsTable appointments={filteredAppointments} role="customer" />
           </div>
         )}
 

@@ -1,4 +1,5 @@
 import { 
+  FaHome,
   FaCalendarAlt, 
   FaUser, 
   FaCommentDots, 
@@ -7,6 +8,11 @@ import {
 import { Nav } from "react-bootstrap";
 
 const SidebarCustomer = ({ activeTab, setActiveTab, onLogout }) => {
+  // ✅ Quay lại trang chủ (root "/")
+  const handleGoHome = () => {
+    window.location.href = "/"; // 👈 Đây là trang chủ thật của bạn
+  };
+
   const menuItems = [
     { id: "profile", icon: <FaUser />, label: "My Profile" },
     { id: "appointments", icon: <FaCalendarAlt />, label: "My Appointments" },
@@ -20,6 +26,15 @@ const SidebarCustomer = ({ activeTab, setActiveTab, onLogout }) => {
     >
       <h3 className="text-center mb-4">Customer Panel</h3>
 
+      {/* 🏠 Home Button */}
+      <button
+        onClick={handleGoHome}
+        className="btn btn-outline-light mb-3 d-flex align-items-center justify-content-start"
+      >
+        <FaHome className="me-2" /> Home
+      </button>
+
+      {/* Navigation Menu */}
       <Nav className="flex-column">
         {menuItems.map((item) => (
           <Nav.Link
@@ -34,6 +49,7 @@ const SidebarCustomer = ({ activeTab, setActiveTab, onLogout }) => {
         ))}
       </Nav>
 
+      {/* 🔹 Logout Button */}
       <div className="mt-auto">
         <button
           onClick={onLogout}

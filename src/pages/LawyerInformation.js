@@ -5,7 +5,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { FaCalendarAlt } from "react-icons/fa";
 
-// Component hiển thị lịch slot cho khách chọn (dựa vào luật sư đã cấu hình)
+// Component hiển thị lịch slot
 const CustomerSchedule = ({ lawyerId, selectedDate, onSelectSlot }) => {
   const [slotsStatus, setSlotsStatus] = useState({});
   const slots = ["09:00", "11:00", "14:00", "16:00"];
@@ -45,7 +45,6 @@ function LawyerInformation() {
   const lawyer = lawyers.find((l) => l.lawyer_id === parseInt(id));
 
   const [showModal, setShowModal] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [form, setForm] = useState({
     appointment_date: "",
@@ -55,6 +54,23 @@ function LawyerInformation() {
     notes: "",
   });
 
+  // ✅ useEffect luôn ở cấp cao nhất, không gọi conditionally
+  useEffect(() => {
+    if (!lawyer) return;
+
+    const pending = JSON.parse(localStorage.getItem("pendingAppointment"));
+    if (pending) {
+      setForm((prev) => ({
+        ...prev,
+        ...pending,
+        total_price: (lawyer.hourly_rate * pending.slot_duration) / 60,
+      }));
+      localStorage.removeItem("pendingAppointment");
+      setShowModal(true);
+    }
+  }, [lawyer]);
+
+  // Nếu lawyer không tồn tại → render fallback
   if (!lawyer) {
     return (
       <div className="container text-center py-5">
@@ -75,14 +91,31 @@ function LawyerInformation() {
       appointment_time: slot,
       total_price: total,
     });
+
+    const customer = JSON.parse(localStorage.getItem("loggedInUser"));
+    if (!customer) {
+      // Chưa login → redirect sang Login page
+      navigate("/login", {
+        state: {
+          redirectBack: `/lawyer/${lawyer.lawyer_id}`,
+          appointmentForm: {
+            appointment_date: date,
+            appointment_time: slot,
+            slot_duration: form.slot_duration,
+          },
+        },
+      });
+      return;
+    }
+
+    setShowModal(true);
   };
 
   // Xử lý submit appointment
   const handleSubmit = () => {
     const customer = JSON.parse(localStorage.getItem("loggedInUser"));
-
     if (!customer) {
-      setShowLogin(true);
+      alert("Please login first.");
       return;
     }
 
@@ -104,7 +137,7 @@ function LawyerInformation() {
     appointments.push(newAppointment);
     localStorage.setItem("appointments", JSON.stringify(appointments));
 
-    // Khi khách đặt slot thành công → tự động đánh dấu bận trong lịch luật sư
+    // Cập nhật lịch bận của luật sư
     const schedules = JSON.parse(localStorage.getItem("lawyerSchedules")) || {};
     const daySchedule = schedules[form.appointment_date] || {};
     daySchedule[form.appointment_time] = "busy";
@@ -119,69 +152,6 @@ function LawyerInformation() {
 
     navigate("/payment", { state: { appointment: newAppointment } });
     setShowModal(false);
-  };
-
-  // Modal login
-  const LoginModal = ({ onClose, onLoginSuccess }) => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-
-    const handleLogin = (e) => {
-      e.preventDefault();
-      const customers = JSON.parse(localStorage.getItem("customers")) || [];
-      const user = customers.find(
-        (c) => c.email === email && c.password === password
-      );
-
-      if (user) {
-        localStorage.setItem("loggedInUser", JSON.stringify(user));
-        onLoginSuccess();
-        onClose();
-      } else {
-        alert("Email hoặc mật khẩu không đúng!");
-      }
-    };
-
-    return (
-      <div
-        className="modal fade show"
-        style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
-      >
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content p-3 rounded-4">
-            <h5>Login to Continue</h5>
-            <form onSubmit={handleLogin}>
-              <input
-                type="email"
-                placeholder="Email"
-                className="form-control mb-2"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                className="form-control mb-2"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button type="submit" className="btn btn-primary w-100">
-                Login
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary w-100 mt-2"
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -304,14 +274,6 @@ function LawyerInformation() {
               </div>
             </div>
           </div>
-        )}
-
-        {/* Modal Login */}
-        {showLogin && (
-          <LoginModal
-            onClose={() => setShowLogin(false)}
-            onLoginSuccess={handleSubmit}
-          />
         )}
       </div>
       <Footer />

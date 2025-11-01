@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Form, Button } from "react-bootstrap";
 import customersData from "../data/customers.json";
 import lawyersData from "../data/lawyers.json";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // để nhận state redirect
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("123456");
@@ -13,7 +16,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
 
-  // ✅ Load data from JSON to localStorage if not exist
+  // Load JSON vào localStorage nếu chưa có
   useEffect(() => {
     if (!localStorage.getItem("customers")) {
       localStorage.setItem("customers", JSON.stringify(customersData));
@@ -23,7 +26,6 @@ const Login = () => {
     }
   }, []);
 
-  // ✅ Handle login
   const handleLogin = (e) => {
     e.preventDefault();
 
@@ -31,7 +33,6 @@ const Login = () => {
     const lawyers = JSON.parse(localStorage.getItem("lawyers")) || [];
 
     let user = null;
-
     if (role === "customer") {
       user = customers.find((u) => u.email === email);
     } else {
@@ -43,16 +44,25 @@ const Login = () => {
       return;
     }
 
-    // ✅ Save user info and role
+    // Save user info
     localStorage.setItem("loggedInUser", JSON.stringify(user));
     localStorage.setItem("userRole", role);
 
-    // ✅ Navigate to correct dashboard
+    // Nếu có redirect từ booking
+    if (location.state?.appointmentForm && location.state?.redirectBack) {
+      localStorage.setItem(
+        "pendingAppointment",
+        JSON.stringify(location.state.appointmentForm)
+      );
+      navigate(location.state.redirectBack);
+      return;
+    }
+
+    // Bình thường login
     if (role === "customer") navigate("/customer-dashboard");
     else navigate("/lawyer-dashboard");
   };
 
-  // ✅ Handle registration (customers only)
   const handleRegister = (e) => {
     e.preventDefault();
 
@@ -84,6 +94,8 @@ const Login = () => {
   };
 
   return (
+    <>
+    <Header/>
     <div className="container mt-5" style={{ maxWidth: "480px" }}>
       <h3 className="text-center mb-4 text-primary">
         {isRegistering ? "Register Account" : "Login to LegalEase"}
@@ -114,7 +126,6 @@ const Login = () => {
           </Form.Group>
         )}
 
-        {/* Role selection (only for login) */}
         {!isRegistering && (
           <Form.Group className="mb-3">
             <Form.Label>Login as</Form.Label>
@@ -162,6 +173,8 @@ const Login = () => {
         </div>
       </Form>
     </div>
+    <Footer/>
+    </>
   );
 };
 

@@ -1,62 +1,112 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { FaUserTie, FaCalendarAlt, FaMoneyBill, FaStickyNote } from "react-icons/fa";
-import Footer from "../components/Footer";
+import React, { useState, useEffect } from "react";
+import { Modal, Button } from "react-bootstrap";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { FaUserTie, FaCalendarAlt, FaMoneyBill, FaStickyNote } from "react-icons/fa";
 
 function AppointmentHistoryPage() {
   const [appointments, setAppointments] = useState([]);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("appointments")) || [];
-    setAppointments(stored);
+    const allAppointments = JSON.parse(localStorage.getItem("appointments")) || [];
+    const user = JSON.parse(localStorage.getItem("loggedInUser"));
+    if (user) {
+      const userAppointments = allAppointments
+        .filter(a => a.customer_id === user.customer_id)
+        .map(a => ({
+          ...a,
+          total_price: a.total_price ?? 0,
+          slot_duration: a.slot_duration ?? 60,
+          appointment_date: a.appointment_date || "N/A",
+          appointment_time: a.appointment_time || "N/A",
+          notes: a.notes || "-",
+        }))
+        .sort((a, b) => {
+          const dateA = new Date(`${a.appointment_date}T${a.appointment_time}`);
+          const dateB = new Date(`${b.appointment_date}T${b.appointment_time}`);
+          return dateB - dateA; // mới nhất lên trên
+        });
+
+      setAppointments(userAppointments);
+    }
   }, []);
 
   return (
     <>
-    <Header/>
-    <div className="container my-5">
-      <div className="card shadow-lg border-0 rounded-4">
-        <div className="card-header bg-primary text-white text-center">
-          <h4>Appointment History</h4>
-        </div>
-        <div className="card-body">
-          {appointments.length === 0 ? (
-            <p className="text-center text-muted">No appointments yet.</p>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-striped align-middle">
-                <thead className="table-light">
-                  <tr>
-                    <th>#</th>
-                    <th>Lawyer</th>
-                    <th>Date</th>
-                    <th>Duration</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {appointments.map((a, index) => (
-                    <tr key={a.id}>
-                      <td>{index + 1}</td>
-                      <td><FaUserTie className="me-2 text-primary" />{a.lawyer_name}</td>
-                      <td><FaCalendarAlt className="me-2 text-success" />{a.appointment_date}</td>
-                      <td>{a.slot_duration} min</td>
-                      <td><FaMoneyBill className="me-2 text-success" />${a.total_price}</td>
-                      <td className="text-primary">{a.status}</td>
-                      <td><FaStickyNote className="me-2 text-secondary" />{a.notes}</td>
+      <Header />
+      <div className="container my-5">
+        <div className="card shadow-lg border-0 rounded-4">
+          <div className="card-header bg-primary text-white text-center">
+            <h4>Appointment History</h4>
+          </div>
+          <div className="card-body">
+            {appointments.length === 0 ? (
+              <p className="text-center text-muted">No appointments yet.</p>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-striped align-middle">
+                  <thead className="table-light">
+                    <tr>
+                      <th>#</th>
+                      <th>Lawyer</th>
+                      <th>Date</th>
+                      <th>Duration</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Notes</th>
+                      <th>View</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {appointments.map((a, index) => (
+                      <tr key={index}>
+                        <td>{index + 1}</td>
+                        <td><FaUserTie className="me-2 text-primary" />{a.lawyer_name}</td>
+                        <td><FaCalendarAlt className="me-2 text-success" />{a.appointment_date}</td>
+                        <td>{a.slot_duration} min</td>
+                        <td><FaMoneyBill className="me-2 text-success" />${a.total_price.toFixed(2)}</td>
+                        <td className="text-primary">{a.status}</td>
+                        <td><FaStickyNote className="me-2 text-secondary" />{a.notes}</td>
+                        <td>
+                          <Button size="sm" variant="info" onClick={() => setSelectedAppointment(a)}>
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-    <Footer/>
+
+      {/* Modal hiển thị chi tiết */}
+      {selectedAppointment && (
+        <Modal show={true} onHide={() => setSelectedAppointment(null)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Appointment Details</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p><strong>Lawyer:</strong> {selectedAppointment.lawyer_name}</p>
+            <p><strong>Date:</strong> {selectedAppointment.appointment_date}</p>
+            <p><strong>Time:</strong> {selectedAppointment.appointment_time}</p>
+            <p><strong>Duration:</strong> {selectedAppointment.slot_duration} min</p>
+            <p><strong>Total:</strong> ${selectedAppointment.total_price.toFixed(2)}</p>
+            <p><strong>Status:</strong> {selectedAppointment.status}</p>
+            <p><strong>Notes:</strong> {selectedAppointment.notes}</p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setSelectedAppointment(null)}>
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
+
+      <Footer />
     </>
   );
 }

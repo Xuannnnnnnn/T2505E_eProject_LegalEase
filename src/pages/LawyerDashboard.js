@@ -1,27 +1,29 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import SidebarLawyer from "../components/SidebarLawyer";
 import LawyerScheduleManager from "../components/LawyerScheduleManager";
 import AppointmentsTable from "../components/AppointmentsTable";
 
 const LawyerDashboard = () => {
+  const navigate = useNavigate();
+
   const [loggedLawyer, setLoggedLawyer] = useState(null);
   const [activeTab, setActiveTab] = useState("schedule");
   const [appointments, setAppointments] = useState([]);
 
-  // ✅ useEffect đầu tiên: kiểm tra login
+  // ✅ Kiểm tra login luật sư
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("loggedInUser"));
     const role = localStorage.getItem("userRole");
 
     if (!storedUser || role !== "lawyer") {
-      window.location.href = "/login";
+      navigate("/login");
       return;
     }
-
     setLoggedLawyer(storedUser);
-  }, []);
+  }, [navigate]);
 
-  // ✅ useEffect thứ hai: chỉ chạy khi có loggedLawyer
+  // ✅ Load appointments của luật sư
   useEffect(() => {
     if (!loggedLawyer) return;
 
@@ -32,17 +34,25 @@ const LawyerDashboard = () => {
     setAppointments(myAppointments);
   }, [loggedLawyer]);
 
+  // ✅ Update status appointment
   const updateAppointmentStatus = (a, status) => {
     const updated = appointments.map((item) =>
-      item.customer_id === a.customer_id && item.appointment_time === a.appointment_time
+      item.lawyer_id === a.lawyer_id &&
+      item.customer_id === a.customer_id &&
+      item.appointment_date === a.appointment_date &&
+      item.appointment_time === a.appointment_time
         ? { ...item, status }
         : item
     );
     setAppointments(updated);
 
+    // Cập nhật toàn bộ appointments trong localStorage
     const allAppointments = JSON.parse(localStorage.getItem("appointments")) || [];
     const merged = allAppointments.map((item) =>
-      item.customer_id === a.customer_id && item.appointment_time === a.appointment_time
+      item.lawyer_id === a.lawyer_id &&
+      item.customer_id === a.customer_id &&
+      item.appointment_date === a.appointment_date &&
+      item.appointment_time === a.appointment_time
         ? { ...item, status }
         : item
     );
@@ -52,37 +62,37 @@ const LawyerDashboard = () => {
   const handleApprove = (a) => updateAppointmentStatus(a, "approved");
   const handleReject = (a) => updateAppointmentStatus(a, "rejected");
 
+  // ✅ Logout SPA-friendly
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("userRole");
-    window.location.href = "/login";
+    navigate("/login");
   };
 
-  // ✅ Khi chưa load xong dữ liệu
   if (!loggedLawyer) {
     return <div className="text-center mt-5 text-secondary">Loading dashboard...</div>;
   }
 
   return (
     <div className="d-flex vh-100">
-      <SidebarLawyer activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
+      <SidebarLawyer
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onLogout={handleLogout}
+      />
 
       <div className="flex-grow-1 p-4 overflow-auto">
         <h3 className="mb-4 text-primary">Lawyer Dashboard</h3>
 
         <div className="mb-3">
           <button
-            className={`btn me-2 ${
-              activeTab === "schedule" ? "btn-primary" : "btn-outline-primary"
-            }`}
+            className={`btn me-2 ${activeTab === "schedule" ? "btn-primary" : "btn-outline-primary"}`}
             onClick={() => setActiveTab("schedule")}
           >
             Manage Schedule
           </button>
           <button
-            className={`btn ${
-              activeTab === "appointments" ? "btn-primary" : "btn-outline-primary"
-            }`}
+            className={`btn ${activeTab === "appointments" ? "btn-primary" : "btn-outline-primary"}`}
             onClick={() => setActiveTab("appointments")}
           >
             Appointments

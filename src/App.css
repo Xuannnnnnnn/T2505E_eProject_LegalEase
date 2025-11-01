@@ -399,5 +399,44 @@ body {
   outline: none !important;
 }
 
+/* Header cố định */
+.header-navbar {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background-color: #fff;
+}
+
+/* Search bar nổi trên nội dung */
+.search-bar-container {
+  position: absolute;
+  width: 100%;
+  top: 70px; /* ngay dưới navbar */
+  left: 0;
+  background-color: #f8f9fa;
+  z-index: 999;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.search-bar-container.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Dropdown login / user giữ chiều rộng cố định */
+.navbar .nav-link,
+.navbar .nav-dropdown {
+  min-width: 120px;
+}
+
 
 

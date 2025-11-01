@@ -1,49 +1,67 @@
-import React, { useState } from "react";
-import { Navbar, Container, Nav, Form, FormControl, Button, NavDropdown} from "react-bootstrap";
-import { FaSearch } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { Navbar, Container, Nav, Form, FormControl, Button, NavDropdown } from "react-bootstrap";
+import { FaSearch, FaUserCircle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
-import specializations from '../data/specializations.json'; 
+import specializations from "../data/specializations.json";
 import "../App.css";
 
 const Header = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [keyword, setKeyword] = useState("");
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState("");
   const navigate = useNavigate();
 
-  // Hàm xử lý tìm kiếm
+  useEffect(() => {
+    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    const userRole = localStorage.getItem("userRole");
+    if (loggedInUser) {
+      setUser(loggedInUser);
+      setRole(userRole);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("userRole");
+    setUser(null);
+    navigate("/");
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (!keyword.trim()) return;
-
-    const query = new URLSearchParams({ keyword }).toString();
-    navigate(`/search?${query}`);
+    navigate(`/search?keyword=${encodeURIComponent(keyword)}`);
     setShowSearch(false);
   };
 
-  // HÀM XỬ LÝ CHUYỂN HƯỚNG TÌM KIẾM THEO CHUYÊN MÔN
   const handleSpecializationClick = (name) => {
-    // 🎯 CHUYỂN HƯỚNG NGAY LẬP TỨC ĐẾN TRANG TÌM KIẾM VỚI THAM SỐ CHUYÊN MÔN
-    const query = new URLSearchParams({ specialization: name }).toString();
-    navigate(`/search?${query}`);
+    navigate(`/search?specialization=${encodeURIComponent(name)}`);
   };
 
   const handleNavigation = (path) => {
     navigate(path);
   };
 
-  const categories = specializations.slice(0, 10); 
+  const categories = specializations.slice(0, 10);
+  const dashboardPath =
+    role === "customer"
+      ? "/customer-dashboard"
+      : role === "lawyer"
+      ? "/lawyer-dashboard"
+      : "/login";
 
   return (
     <>
       <Navbar bg="light" expand="lg" className="shadow-sm py-2 header-navbar">
         <Container className="d-flex align-items-center justify-content-between">
+          {/* Logo */}
           <Navbar.Brand
             as={Link}
             to="/"
             className="fw-bold d-flex align-items-center"
             style={{ fontSize: "1.4rem", color: "#1a237e", textDecoration: "none" }}
           >
-            {/* Logo/Thương hiệu */}
             ⚖️ <span className="ms-1 text-warning">Legal</span>
             <span style={{ color: "#1a237e" }}>Ease</span>
           </Navbar.Brand>
@@ -51,15 +69,11 @@ const Header = () => {
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
             <Nav className="align-items-center gap-3">
-
-              {/* NAVDROPDOWN ĐÃ THÊM MŨI TÊN ▼ VÀO TITLE */}
+              {/* Explore menu */}
               <NavDropdown
-                // 🎯 SỬA: Thêm biểu tượng mũi tên chỉ xuống vào title
-                title={<span className="text-dark fw-semibold">Explore LegalEase</span>} 
+                title={<span className="text-dark fw-semibold">Explore LegalEase</span>}
                 id="basic-nav-dropdown"
-                className="text-dark fw-semibold"
               >
-                {/* Dùng .map() để tạo các mục từ dữ liệu JSON */}
                 {categories.map((item) => (
                   <NavDropdown.Item
                     key={item.specialization_id}
@@ -68,26 +82,54 @@ const Header = () => {
                     {item.name}
                   </NavDropdown.Item>
                 ))}
-
               </NavDropdown>
 
               <span className="border-end mx-1" style={{ height: "20px" }}></span>
 
-              {/* Link Đăng nhập (Log In) */}
-              <Nav.Link
-                onClick={() => handleNavigation('/login')}
-                className="text-dark fw-semibold cursor-pointer"
-              >
-                Log In
-              </Nav.Link>
-              <Nav.Link
-                onClick={() => handleNavigation('/registercustomer')}
-                className="text-dark fw-semibold cursor-pointer"
-              >
-                Register
-              </Nav.Link>
+              {/* Login / User */}
+              {!user ? (
+                <>
+                  <NavDropdown
+                    title={<span className="text-dark fw-semibold">Log In</span>}
+                    id="login-nav-dropdown"
+                  >
+                    <NavDropdown.Item onClick={() => handleNavigation("/customer-dashboard")}>
+                      As Customer
+                    </NavDropdown.Item>
+                    <NavDropdown.Item onClick={() => handleNavigation("/lawyer-dashboard")}>
+                      As Lawyer
+                    </NavDropdown.Item>
+                  </NavDropdown>
 
-              {/* Biểu tượng Search */}
+                  <Nav.Link
+                    onClick={() => handleNavigation("/registercustomer")}
+                    className="text-dark fw-semibold cursor-pointer"
+                    style={{ minWidth: "120px" }}
+                  >
+                    Register
+                  </Nav.Link>
+                </>
+              ) : (
+                <NavDropdown
+                  title={
+                    <span
+                      className="text-dark fw-semibold d-flex align-items-center"
+                      style={{ minWidth: "120px" }}
+                    >
+                      <FaUserCircle className="me-1" /> {user.name}
+                    </span>
+                  }
+                  id="user-nav-dropdown"
+                >
+                  <NavDropdown.Item onClick={() => handleNavigation(dashboardPath)}>
+                    Dashboard
+                  </NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item onClick={handleLogout}>Logout</NavDropdown.Item>
+                </NavDropdown>
+              )}
+
+              {/* Search icon */}
               <FaSearch
                 size={18}
                 style={{ cursor: "pointer", color: "#1a237e" }}
@@ -98,25 +140,23 @@ const Header = () => {
         </Container>
       </Navbar>
 
-      {/* Thanh tìm kiếm mở rộng */}
-      {showSearch && (
-        <div className="search-bar-container text-center py-3 bg-light shadow-sm">
-          <Container>
-            <Form className="d-flex justify-content-center" onSubmit={handleSearch}>
-              <FormControl
-                type="search"
-                placeholder="Search lawyers, categories..."
-                className="me-2 w-50"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
-              <Button variant="primary" type="submit">
-                Search
-              </Button>
-            </Form>
-          </Container>
-        </div>
-      )}
+      {/* Search bar */}
+      <div className={`search-bar-container ${showSearch ? "show" : ""}`}>
+        <Container>
+          <Form className="d-flex justify-content-center py-3" onSubmit={handleSearch}>
+            <FormControl
+              type="search"
+              placeholder="Search lawyers, categories..."
+              className="me-2 w-50"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+            <Button variant="primary" type="submit">
+              Search
+            </Button>
+          </Form>
+        </Container>
+      </div>
     </>
   );
 };
