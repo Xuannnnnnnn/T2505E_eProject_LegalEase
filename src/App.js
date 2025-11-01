@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useEffect, Navigate } from "react";
-
 // ✅ Pages
 import HomePage from "./pages/HomePage";
 import SearchLawyerPage from "./pages/SearchLawyerPage";
@@ -19,6 +18,10 @@ import AdminAppointments from "./pages/AdminAppointments";
 import LawyerDashboard from "./pages/LawyerDashboard";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import { setupData } from "./utils/setupData";
+import PaymentEarningsPage from "./pages/PaymentEarningsPage";
+import LawyerProfilePage from "./pages/LawyerProfilePage";
+import CustomerNotificationsPage from "./pages/CustomerNotificationsPage";
+import LawyerNotificationsPage from "./pages/LawyerNotificationsPage";
 
 
 // ✅ Styles
@@ -121,6 +124,11 @@ function App() {
 
           {/* Catch-all redirect về login */}
           <Route path="*" element={<Navigate to="/login" />} />
+          <Route path="/lawyer/earnings" element={<PaymentEarningsPage />} />
+          <Route path="/lawyer/profile" element={<LawyerProfilePage />} />
+          <Route path="/notifications/customer" element={<CustomerNotificationsPage />} />
+          <Route path="/notifications/lawyer" element={<LawyerNotificationsPage />} />
+
         </Routes>
       </main>
     </Router>
