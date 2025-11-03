@@ -23,6 +23,8 @@ import LawyerProfilePage from "./pages/LawyerProfilePage";
 import CustomerNotificationsPage from "./pages/CustomerNotificationsPage";
 import LawyerNotificationsPage from "./pages/LawyerNotificationsPage";
 import LawyerDetail from "./components/LawyerDetail";
+import AdminExpenseManagementPage from "./pages/AdminExpenseManagementPage";
+
 
 
 // ✅ Styles
@@ -129,7 +131,7 @@ function App() {
           <Route path="/lawyer/profile" element={<LawyerProfilePage />} />
           <Route path="/notifications/customer" element={<CustomerNotificationsPage />} />
           <Route path="/notifications/lawyer" element={<LawyerNotificationsPage />} />
-
+          <Route path="/admin/expenses" element={<AdminExpenseManagementPage />} />
         </Routes>
       </main>
     </Router>
