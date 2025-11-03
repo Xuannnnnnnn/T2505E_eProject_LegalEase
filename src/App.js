@@ -22,6 +22,7 @@ import PaymentEarningsPage from "./pages/PaymentEarningsPage";
 import LawyerProfilePage from "./pages/LawyerProfilePage";
 import CustomerNotificationsPage from "./pages/CustomerNotificationsPage";
 import LawyerNotificationsPage from "./pages/LawyerNotificationsPage";
+import LawyerDetail from "./components/LawyerDetail";
 
 
 // ✅ Styles
@@ -84,7 +85,7 @@ function App() {
           <Route path="/customer-dashboard" element={<CustomerDashboard />} />
           {/* Trang Appointments Admin */}
           <Route path="/admin/appointments" element={<AdminAppointments />} />
-
+          <Route path="/lawyer/:id" element={<LawyerDetail />} />
 
           {/* Trang lỗi 404 */}
           <Route

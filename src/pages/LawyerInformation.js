@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import lawyers from "../data/lawyers.json";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { FaCalendarAlt } from "react-icons/fa";
+
+const BASE_URL = "http://localhost:3001"; // ⚙️ JSON Server base URL
 
 // Component hiển thị lịch slot
 const CustomerSchedule = ({ lawyerId, selectedDate, onSelectSlot }) => {
@@ -11,8 +12,22 @@ const CustomerSchedule = ({ lawyerId, selectedDate, onSelectSlot }) => {
   const slots = ["09:00", "11:00", "14:00", "16:00"];
 
   useEffect(() => {
-    const schedules = JSON.parse(localStorage.getItem("lawyerSchedules")) || {};
-    setSlotsStatus(schedules[selectedDate] || {});
+    const fetchSlots = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/appointments?lawyer_id=${lawyerId}&appointment_date=${selectedDate}`);
+        const appointments = await res.json();
+
+        // Đánh dấu các slot đã bận
+        const status = {};
+        appointments.forEach((a) => {
+          status[a.appointment_time] = "busy";
+        });
+        setSlotsStatus(status);
+      } catch (error) {
+        console.error("Error loading schedule:", error);
+      }
+    };
+    fetchSlots();
   }, [selectedDate, lawyerId]);
 
   return (
@@ -28,7 +43,7 @@ const CustomerSchedule = ({ lawyerId, selectedDate, onSelectSlot }) => {
               className={`btn ${
                 status === "available" ? "btn-outline-primary" : "btn-secondary disabled"
               }`}
-              onClick={() => onSelectSlot(slot, selectedDate)}
+              onClick={() => status === "available" && onSelectSlot(slot, selectedDate)}
             >
               {slot} ({status})
             </button>
@@ -42,8 +57,9 @@ const CustomerSchedule = ({ lawyerId, selectedDate, onSelectSlot }) => {
 function LawyerInformation() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const lawyer = lawyers.find((l) => l.lawyer_id === parseInt(id));
 
+  const [lawyer, setLawyer] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [form, setForm] = useState({
@@ -54,27 +70,44 @@ function LawyerInformation() {
     notes: "",
   });
 
-  // ✅ useEffect luôn ở cấp cao nhất, không gọi conditionally
+  // 🔹 Lấy thông tin luật sư từ db.json (JSON Server)
   useEffect(() => {
-    if (!lawyer) return;
+    const fetchLawyer = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/lawyers?id=${id}`);
+          const data = await res.json();
+          const lawyerData = data[0]; // vì JSON Server trả mảng khi tìm bằng ?id=
 
-    const pending = JSON.parse(localStorage.getItem("pendingAppointment"));
-    if (pending) {
-      setForm((prev) => ({
-        ...prev,
-        ...pending,
-        total_price: (lawyer.hourly_rate * pending.slot_duration) / 60,
-      }));
-      localStorage.removeItem("pendingAppointment");
-      setShowModal(true);
-    }
-  }, [lawyer]);
+          if (!lawyerData || lawyerData.status !== "Approved") {
+            setLawyer(null);
+          } else {
+            setLawyer(lawyerData);
+          }
 
-  // Nếu lawyer không tồn tại → render fallback
+      } catch (err) {
+        console.error(err);
+        setLawyer(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLawyer();
+  }, [id]);
+
+  // Nếu đang tải
+  if (loading) {
+    return (
+      <div className="container text-center py-5">
+        <h4>Loading...</h4>
+      </div>
+    );
+  }
+
+  // Nếu luật sư không tồn tại hoặc chưa được duyệt
   if (!lawyer) {
     return (
       <div className="container text-center py-5">
-        <h3 className="text-danger">Lawyer not found.</h3>
+        <h3 className="text-danger">❌ Lawyer not found or not approved by Admin.</h3>
         <Link to="/search" className="btn btn-outline-primary mt-3">
           Back
         </Link>
@@ -82,7 +115,7 @@ function LawyerInformation() {
     );
   }
 
-  // Chọn slot lịch
+  // ✅ Chọn slot lịch
   const handleSelectSlot = (slot, date) => {
     const total = (lawyer.hourly_rate * form.slot_duration) / 60;
     setForm({
@@ -97,7 +130,7 @@ function LawyerInformation() {
       // Chưa login → redirect sang Login page
       navigate("/login", {
         state: {
-          redirectBack: `/lawyer/${lawyer.lawyer_id}`,
+          redirectBack: `/lawyer/${lawyer.id}`,
           appointmentForm: {
             appointment_date: date,
             appointment_time: slot,
@@ -111,8 +144,8 @@ function LawyerInformation() {
     setShowModal(true);
   };
 
-  // Xử lý submit appointment
-  const handleSubmit = () => {
+  // ✅ Xử lý submit appointment → lưu vào db.json
+  const handleSubmit = async () => {
     const customer = JSON.parse(localStorage.getItem("loggedInUser"));
     if (!customer) {
       alert("Please login first.");
@@ -120,9 +153,9 @@ function LawyerInformation() {
     }
 
     const newAppointment = {
-      lawyer_id: lawyer.lawyer_id,
+      lawyer_id: lawyer.id,
       lawyer_name: lawyer.name,
-      customer_id: customer.customer_id,
+      customer_id: customer.id,
       customer_name: customer.fullname,
       appointment_date: form.appointment_date,
       appointment_time: form.appointment_time,
@@ -133,25 +166,27 @@ function LawyerInformation() {
       status: "pending",
     };
 
-    const appointments = JSON.parse(localStorage.getItem("appointments")) || [];
-    appointments.push(newAppointment);
-    localStorage.setItem("appointments", JSON.stringify(appointments));
+    try {
+      const res = await fetch(`${BASE_URL}/appointments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newAppointment),
+      });
 
-    // Cập nhật lịch bận của luật sư
-    const schedules = JSON.parse(localStorage.getItem("lawyerSchedules")) || {};
-    const daySchedule = schedules[form.appointment_date] || {};
-    daySchedule[form.appointment_time] = "busy";
-    schedules[form.appointment_date] = daySchedule;
-    localStorage.setItem("lawyerSchedules", JSON.stringify(schedules));
-
-    alert(
-      `✅ Appointment confirmed with ${lawyer.name}\nDate: ${form.appointment_date} ${form.appointment_time}\nTotal: $${form.total_price.toFixed(
-        2
-      )}`
-    );
-
-    navigate("/payment", { state: { appointment: newAppointment } });
-    setShowModal(false);
+      if (res.ok) {
+        alert(
+          `✅ Appointment confirmed with ${lawyer.name}\nDate: ${form.appointment_date} ${form.appointment_time}\nTotal: $${form.total_price.toFixed(
+            2
+          )}`
+        );
+        navigate("/payment", { state: { appointment: newAppointment } });
+        setShowModal(false);
+      } else {
+        alert("❌ Failed to save appointment.");
+      }
+    } catch (error) {
+      console.error("Error saving appointment:", error);
+    }
   };
 
   return (
@@ -171,15 +206,10 @@ function LawyerInformation() {
             <div className="col-md-7 p-4">
               <h3 className="fw-bold text-primary">{lawyer.name}</h3>
               <p className="text-muted mb-2">{lawyer.city}</p>
-              <p className="fw-semibold text-success">
-                ${lawyer.hourly_rate}/hour
-              </p>
+              <p className="fw-semibold text-success">${lawyer.hourly_rate}/hour</p>
               <p>{lawyer.profile_summary}</p>
 
-              <button
-                className="btn btn-primary"
-                onClick={() => setShowModal(true)}
-              >
+              <button className="btn btn-primary" onClick={() => setShowModal(true)}>
                 <FaCalendarAlt className="me-2" /> Book Appointment
               </button>
             </div>
@@ -218,7 +248,7 @@ function LawyerInformation() {
                     />
 
                     <CustomerSchedule
-                      lawyerId={lawyer.lawyer_id}
+                      lawyerId={lawyer.id}
                       selectedDate={selectedDate}
                       onSelectSlot={handleSelectSlot}
                     />
@@ -253,9 +283,7 @@ function LawyerInformation() {
                       className="form-control"
                       rows="3"
                       value={form.notes}
-                      onChange={(e) =>
-                        setForm({ ...form, notes: e.target.value })
-                      }
+                      onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     ></textarea>
                   </div>
                   <div className="modal-footer">
