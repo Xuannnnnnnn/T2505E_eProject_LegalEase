@@ -1,11 +1,57 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Container, Row, Col, Form, Button, Card } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 function RegisterCustomer() {
   const primaryColor = '#17a2b8';
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    email: '',
+    password_hash: '',
+    fullname: '',
+    phone: '',
+    address: '',
+    dob: '',
+    gender: 'Male',
+  });
+
+  const handleChange = (e) => {
+    const { id, value } = e.target;
+    setFormData({ ...formData, [id.replace('form', '').toLowerCase()]: value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const newCustomer = {
+      ...formData,
+      register_date: new Date().toISOString().split('T')[0],
+      last_login: '',
+      status: 'Inactive',
+      other: '',
+    };
+
+    try {
+      const response = await fetch('http://localhost:3001/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCustomer),
+      });
+
+      if (response.ok) {
+        alert('Đăng ký thành công!');
+        navigate('/login');
+      } else {
+        alert('Lỗi khi đăng ký!');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Không thể kết nối đến server.');
+    }
+  };
 
   return (
     <>
@@ -16,7 +62,7 @@ function RegisterCustomer() {
       >
         <Card
           style={{
-            width: '35rem',
+            width: '40rem',
             padding: '2rem 2.5rem',
             boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
             borderRadius: '12px',
@@ -24,44 +70,64 @@ function RegisterCustomer() {
         >
           <Card.Body>
             <h4
-              className="text-center mb-5 fw-bolder"
+              className="text-center mb-4 fw-bolder"
               style={{ color: primaryColor, letterSpacing: '1px', textTransform: 'uppercase' }}
             >
-              SIGN UP AS A CLIENT
+              Sign Up as a Client
             </h4>
 
-            <Form>
-              <Row className="mb-2">
+            <Form onSubmit={handleSubmit}>
+              <Row>
                 <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formUsername">
-                    <Form.Label>Username</Form.Label>
-                    <Form.Control type="text" placeholder="Dùng để đăng nhập" required />
+                  <Form.Group className="mb-3" controlId="formEmail">
+                    <Form.Label>Email</Form.Label>
+                    <Form.Control type="email" placeholder="Email dùng để đăng nhập" required onChange={handleChange} />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formPassword">
+                  <Form.Group className="mb-3" controlId="formPassword_hash">
                     <Form.Label>Password</Form.Label>
-                    <Form.Control type="password" required />
+                    <Form.Control type="password" required onChange={handleChange} />
                   </Form.Group>
                 </Col>
               </Row>
 
-              <Form.Group className="mb-3" controlId="formEmail">
-                <Form.Label>Email</Form.Label>
-                <Form.Control type="email" placeholder="Email dùng để đăng nhập" required />
-              </Form.Group>
-
               <Row>
                 <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formFullName">
+                  <Form.Group className="mb-3" controlId="formFullname">
                     <Form.Label>Full Name</Form.Label>
-                    <Form.Control type="text" />
+                    <Form.Control type="text" onChange={handleChange} />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formCity">
-                    <Form.Label>City</Form.Label>
-                    <Form.Control type="text" placeholder="Ví dụ: Ho Chi Minh" />
+                  <Form.Group className="mb-3" controlId="formPhone">
+                    <Form.Label>Phone</Form.Label>
+                    <Form.Control type="text" onChange={handleChange} />
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3" controlId="formAddress">
+                    <Form.Label>Address</Form.Label>
+                    <Form.Control type="text" onChange={handleChange} />
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group className="mb-3" controlId="formDob">
+                    <Form.Label>Date of Birth</Form.Label>
+                    <Form.Control type="date" onChange={handleChange} />
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group className="mb-3" controlId="formGender">
+                    <Form.Label>Gender</Form.Label>
+                    <Form.Select onChange={handleChange}>
+                      <option>Male</option>
+                      <option>Female</option>
+                      <option>Other</option>
+                    </Form.Select>
                   </Form.Group>
                 </Col>
               </Row>

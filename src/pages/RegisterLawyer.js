@@ -1,55 +1,89 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Container, Row, Col, Form, Button, Card } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import specializationData from "../data/specializations.json"; // 👈 nhớ có file JSON này trong /src/data/
+import specializationData from "../data/specializations.json";
 
 function RegisterLawyer() {
-  const primaryColor = "#17a2b8";
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const BASE_URL = "http://localhost:3001";
 
   const [formData, setFormData] = useState({
-    full_name: "",
+    name: "",
     email: "",
-    password: "",
-    experience_years: "",
-    successful_cases: "",
-    specialization: "",
+    password_hash: "",
+    dob: "",
+    gender: "Male",
+    phone: "",
+    address: "",
     city: "",
+    experience_years: "",
+    cases_handled: "",
+    specialization: "",
+    hourly_rate: "",
+    profile_summary: "",
+    image: null,
+    degree_file: null,
+    license_file: null,
+    certificates: null
   });
 
-  const [validated, setValidated] = useState(false);
+  // 🧩 Convert uploaded file to Base64 (for JSON storage)
+  const handleFileChange = (e, key) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  // ✅ Khi nhấn submit form
-  const handleSubmit = (e) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData((prev) => ({
+        ...prev,
+        [key]: {
+          name: file.name,
+          type: file.type,
+          data: reader.result, // base64 string
+        },
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ✅ Handle form submit
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const form = e.currentTarget;
-    if (form.checkValidity() === false) {
-      e.stopPropagation();
-      setValidated(true);
-      return;
-    }
-
-    // ✅ Tính rating tạm thời dựa vào số năm kinh nghiệm và tỉ lệ vụ thành công
-    const exp = parseInt(formData.experience_years || 0);
-    const success = parseInt(formData.successful_cases || 0);
-    const rating = Math.min(5, Math.round((exp * 0.3 + success * 0.05) * 10) / 10);
+    setLoading(true);
 
     const newLawyer = {
       ...formData,
-      rating,
-      id: Date.now(),
+      lawyer_id: Date.now(),
+      rating: 0,
+      verify_status: false,
+      approve_by: null,
+      approve_at: null,
+      register_date: new Date().toISOString(),
+      status: "Pending"
     };
 
-    // ✅ Lưu vào localStorage
-    const existing = JSON.parse(localStorage.getItem("lawyers")) || [];
-    existing.push(newLawyer);
-    localStorage.setItem("lawyers", JSON.stringify(existing));
+    try {
+      const res = await fetch(`${BASE_URL}/lawyers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newLawyer),
+      });
 
-    alert("✅ Lawyer registered successfully!");
-    navigate("/login");
+      if (res.ok) {
+        alert("✅ Registration successful! Please wait for admin approval.");
+        navigate("/login");
+      } else {
+        alert("❌ Error while registering lawyer!");
+      }
+    } catch (err) {
+      alert("⚠️ Cannot connect to server!");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,136 +91,135 @@ function RegisterLawyer() {
       <Header />
       <Container
         className="d-flex justify-content-center align-items-center"
-        style={{ minHeight: "calc(100vh - 120px)", padding: "3rem 0", backgroundColor: "#f8f9fa" }}
+        style={{ minHeight: "calc(100vh - 120px)", background: "#f8f9fa", padding: "2rem" }}
       >
-        <Card
-          style={{
-            width: "40rem",
-            padding: "2rem 2.5rem",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-            borderRadius: "12px",
-          }}
-        >
+        <Card style={{ width: "45rem", padding: "2rem", borderRadius: "10px", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }}>
           <Card.Body>
-            <h4
-              className="text-center mb-5 fw-bolder"
-              style={{ color: primaryColor, letterSpacing: "1px", textTransform: "uppercase" }}
-            >
-              SIGN UP AS A LAWYER
-            </h4>
+            <h3 className="text-center text-info fw-bold mb-4">Lawyer Registration</h3>
 
-            <Form noValidate validated={validated} onSubmit={handleSubmit}>
-              <Row className="mb-2">
+            <Form onSubmit={handleSubmit}>
+              {/* Basic Info */}
+              <Row>
                 <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formFullName">
+                  <Form.Group className="mb-3">
                     <Form.Label>Full Name</Form.Label>
                     <Form.Control
-                      type="text"
-                      placeholder="Your full name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
-                      value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                     />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formEmail">
+                  <Form.Group className="mb-3">
                     <Form.Label>Email</Form.Label>
                     <Form.Control
                       type="email"
-                      placeholder="Used for login"
-                      required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
                     />
                   </Form.Group>
                 </Col>
               </Row>
 
+              <Form.Group className="mb-3">
+                <Form.Label>Password</Form.Label>
+                <Form.Control
+                  type="password"
+                  value={formData.password_hash}
+                  onChange={(e) => setFormData({ ...formData, password_hash: e.target.value })}
+                  required
+                />
+              </Form.Group>
+
+              {/* Personal Info */}
               <Row>
                 <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formPassword">
-                    <Form.Label>Password</Form.Label>
-                    <Form.Control
-                      type="password"
-                      required
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    />
+                  <Form.Group className="mb-3">
+                    <Form.Label>Gender</Form.Label>
+                    <Form.Select
+                      value={formData.gender}
+                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    >
+                      <option>Male</option>
+                      <option>Female</option>
+                      <option>Other</option>
+                    </Form.Select>
                   </Form.Group>
                 </Col>
                 <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formCity">
-                    <Form.Label>City</Form.Label>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Date of Birth</Form.Label>
                     <Form.Control
-                      type="text"
-                      placeholder="e.g. Ho Chi Minh"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      type="date"
+                      value={formData.dob}
+                      onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                     />
                   </Form.Group>
                 </Col>
               </Row>
 
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formExperience">
-                    <Form.Label>Years of Experience</Form.Label>
-                    <Form.Control
-                      type="number"
-                      min="0"
-                      required
-                      value={formData.experience_years}
-                      onChange={(e) =>
-                        setFormData({ ...formData, experience_years: e.target.value })
-                      }
-                    />
-                  </Form.Group>
-                </Col>
-
-                <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formSuccess">
-                    <Form.Label>Successful Cases</Form.Label>
-                    <Form.Control
-                      type="number"
-                      min="0"
-                      required
-                      value={formData.successful_cases}
-                      onChange={(e) =>
-                        setFormData({ ...formData, successful_cases: e.target.value })
-                      }
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-
-              <Form.Group className="mb-3" controlId="formSpecialization">
+              <Form.Group className="mb-3">
                 <Form.Label>Specialization</Form.Label>
                 <Form.Select
-                  required
                   value={formData.specialization}
                   onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
                 >
-                  <option value="">Select specialization...</option>
-                  {specializationData.map((spec, index) => (
-                    <option key={index} value={spec.name}>
-                      {spec.name}
-                    </option>
+                  <option value="">-- Select specialization --</option>
+                  {specializationData.map((s, i) => (
+                    <option key={i} value={s.name}>{s.name}</option>
                   ))}
                 </Form.Select>
               </Form.Group>
 
-              <div className="d-grid gap-2 mb-3">
-                <Button variant="info" type="submit" className="py-2 text-uppercase fw-bold">
-                  Register Now
+              {/* File Uploads */}
+              <Row>
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Profile Image</Form.Label>
+                    <Form.Control type="file" accept="image/*" onChange={(e) => handleFileChange(e, "image")} />
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Degree File</Form.Label>
+                    <Form.Control type="file" onChange={(e) => handleFileChange(e, "degree_file")} />
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>License File</Form.Label>
+                    <Form.Control type="file" onChange={(e) => handleFileChange(e, "license_file")} />
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Certificates</Form.Label>
+                    <Form.Control type="file" onChange={(e) => handleFileChange(e, "certificates")} />
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              {/* Summary */}
+              <Form.Group className="mb-3">
+                <Form.Label>Profile Summary</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  value={formData.profile_summary}
+                  onChange={(e) => setFormData({ ...formData, profile_summary: e.target.value })}
+                />
+              </Form.Group>
+
+              <div className="d-grid">
+                <Button variant="info" type="submit" disabled={loading}>
+                  {loading ? "Submitting..." : "Register Now"}
                 </Button>
               </div>
 
-              <p className="text-center text-muted" style={{ fontSize: "0.9rem" }}>
-                Already have an account?{" "}
-                <Link to="/login" className="fw-bold text-info">
-                  Login now
-                </Link>
+              <p className="text-center mt-3">
+                Already have an account? <Link to="/login">Login</Link>
               </p>
             </Form>
           </Card.Body>

@@ -89,17 +89,13 @@ const Header = () => {
               {/* Login / User */}
               {!user ? (
                 <>
-                  <NavDropdown
-                    title={<span className="text-dark fw-semibold">Log In</span>}
-                    id="login-nav-dropdown"
+                  <Nav.Link
+                    onClick={() => handleNavigation("/login")}
+                    className="text-dark fw-semibold cursor-pointer"
+                    style={{ minWidth: "120px" }}
                   >
-                    <NavDropdown.Item onClick={() => handleNavigation("/customer-dashboard")}>
-                      As Customer
-                    </NavDropdown.Item>
-                    <NavDropdown.Item onClick={() => handleNavigation("/lawyer-dashboard")}>
-                      As Lawyer
-                    </NavDropdown.Item>
-                  </NavDropdown>
+                    Login
+                  </Nav.Link>
 
                   <Nav.Link
                     onClick={() => handleNavigation("/registercustomer")}
@@ -116,7 +112,8 @@ const Header = () => {
                       className="text-dark fw-semibold d-flex align-items-center"
                       style={{ minWidth: "120px" }}
                     >
-                      <FaUserCircle className="me-1" /> {user.name}
+                      <FaUserCircle className="me-1" />
+                      {user.fullname || user.name || user.username}
                     </span>
                   }
                   id="user-nav-dropdown"
