@@ -3,8 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
   FaQrcode,
   FaCreditCard,
-  FaUniversity,
-  FaMoneyBillWave,
+  FaMoneyBillWave, // Giữ lại các icon có dùng
 } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
