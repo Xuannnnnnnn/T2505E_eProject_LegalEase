@@ -30,26 +30,32 @@ function RegisterLawyer() {
     certificates: null
   });
 
-  // 🧩 Convert uploaded file to Base64 (for JSON storage)
+  // Convert file to Base64
   const handleFileChange = (e, key) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = () => {
-      setFormData((prev) => ({
-        ...prev,
-        [key]: {
-          name: file.name,
-          type: file.type,
-          data: reader.result, // base64 string
-        },
-      }));
+      setFormData({
+        ...formData,
+        [key]: { name: file.name, type: file.type, data: reader.result },
+      });
     };
     reader.readAsDataURL(file);
   };
 
-  // ✅ Handle form submit
+  // Convert image to Base64
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData({ ...formData, image: reader.result }); // Lưu Base64 string
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -62,7 +68,7 @@ function RegisterLawyer() {
       approve_by: null,
       approve_at: null,
       register_date: new Date().toISOString(),
-      status: "Pending"
+      status: "Pending",
     };
 
     try {
@@ -73,13 +79,13 @@ function RegisterLawyer() {
       });
 
       if (res.ok) {
-        alert("✅ Registration successful! Please wait for admin approval.");
+        alert("Registration successful! Please wait for admin approval.");
         navigate("/login");
       } else {
-        alert("❌ Error while registering lawyer!");
+        alert("Error while registering lawyer!");
       }
     } catch (err) {
-      alert("⚠️ Cannot connect to server!");
+      alert("Cannot connect to server!");
       console.error(err);
     } finally {
       setLoading(false);
@@ -91,21 +97,35 @@ function RegisterLawyer() {
       <Header />
       <Container
         className="d-flex justify-content-center align-items-center"
-        style={{ minHeight: "calc(100vh - 120px)", background: "#f8f9fa", padding: "2rem" }}
+        style={{
+          minHeight: "calc(100vh - 120px)",
+          background: "#f8f9fa",
+          padding: "2rem",
+        }}
       >
-        <Card style={{ width: "45rem", padding: "2rem", borderRadius: "10px", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }}>
+        <Card
+          style={{
+            width: "45rem",
+            padding: "2rem",
+            borderRadius: "10px",
+            boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+          }}
+        >
           <Card.Body>
-            <h3 className="text-center text-info fw-bold mb-4">Lawyer Registration</h3>
+            <h3 className="text-center text-info fw-bold mb-4">
+              Lawyer Registration
+            </h3>
 
             <Form onSubmit={handleSubmit}>
-              {/* Basic Info */}
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Full Name</Form.Label>
                     <Form.Control
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       required
                     />
                   </Form.Group>
@@ -116,7 +136,9 @@ function RegisterLawyer() {
                     <Form.Control
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       required
                     />
                   </Form.Group>
@@ -128,19 +150,22 @@ function RegisterLawyer() {
                 <Form.Control
                   type="password"
                   value={formData.password_hash}
-                  onChange={(e) => setFormData({ ...formData, password_hash: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password_hash: e.target.value })
+                  }
                   required
                 />
               </Form.Group>
 
-              {/* Personal Info */}
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Gender</Form.Label>
                     <Form.Select
                       value={formData.gender}
-                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, gender: e.target.value })
+                      }
                     >
                       <option>Male</option>
                       <option>Female</option>
@@ -154,63 +179,65 @@ function RegisterLawyer() {
                     <Form.Control
                       type="date"
                       value={formData.dob}
-                      onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, dob: e.target.value })
+                      }
                     />
                   </Form.Group>
                 </Col>
               </Row>
 
               <Form.Group className="mb-3">
+                <Form.Label>Profile Picture</Form.Label>
+                <Form.Control type="file" accept="image/*" onChange={handleImageChange} />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
                 <Form.Label>Specialization</Form.Label>
                 <Form.Select
                   value={formData.specialization}
-                  onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, specialization: e.target.value })
+                  }
                 >
                   <option value="">-- Select specialization --</option>
                   {specializationData.map((s, i) => (
-                    <option key={i} value={s.name}>{s.name}</option>
+                    <option key={i} value={s.name}>
+                      {s.name}
+                    </option>
                   ))}
                 </Form.Select>
               </Form.Group>
 
-              {/* File Uploads */}
               <Row>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Profile Image</Form.Label>
-                    <Form.Control type="file" accept="image/*" onChange={(e) => handleFileChange(e, "image")} />
-                  </Form.Group>
-                </Col>
-                <Col md={3}>
+                <Col md={4}>
                   <Form.Group className="mb-3">
                     <Form.Label>Degree File</Form.Label>
-                    <Form.Control type="file" onChange={(e) => handleFileChange(e, "degree_file")} />
+                    <Form.Control
+                      type="file"
+                      onChange={(e) => handleFileChange(e, "degree_file")}
+                    />
                   </Form.Group>
                 </Col>
-                <Col md={3}>
+                <Col md={4}>
                   <Form.Group className="mb-3">
                     <Form.Label>License File</Form.Label>
-                    <Form.Control type="file" onChange={(e) => handleFileChange(e, "license_file")} />
+                    <Form.Control
+                      type="file"
+                      onChange={(e) => handleFileChange(e, "license_file")}
+                    />
                   </Form.Group>
                 </Col>
-                <Col md={3}>
+                <Col md={4}>
                   <Form.Group className="mb-3">
                     <Form.Label>Certificates</Form.Label>
-                    <Form.Control type="file" onChange={(e) => handleFileChange(e, "certificates")} />
+                    <Form.Control
+                      type="file"
+                      onChange={(e) => handleFileChange(e, "certificates")}
+                    />
                   </Form.Group>
                 </Col>
               </Row>
-
-              {/* Summary */}
-              <Form.Group className="mb-3">
-                <Form.Label>Profile Summary</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  value={formData.profile_summary}
-                  onChange={(e) => setFormData({ ...formData, profile_summary: e.target.value })}
-                />
-              </Form.Group>
 
               <div className="d-grid">
                 <Button variant="info" type="submit" disabled={loading}>

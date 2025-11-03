@@ -165,6 +165,28 @@ const AdminDashboard = () => {
           <Modal.Body>
             {selectedLawyer ? (
               <div>
+                {selectedLawyer?.image && (
+                  <div className="text-center mb-3">
+                    <img
+                      src={
+                        typeof selectedLawyer.image === "string"
+                          ? selectedLawyer.image.startsWith("data:")
+                            ? selectedLawyer.image
+                            : `/${selectedLawyer.image}`
+                          : selectedLawyer.image?.data
+                      }
+                      alt={selectedLawyer.name}
+                      style={{
+                        width: "180px",
+                        height: "180px",
+                        objectFit: "cover",
+                        borderRadius: "50%",
+                        border: "3px solid #007bff",
+                      }}
+                    />
+                  </div>
+                )}
+
                 <p><strong>Full Name:</strong> {selectedLawyer.name}</p>
                 <p><strong>Email:</strong> {selectedLawyer.email}</p>
                 <p><strong>Phone:</strong> {selectedLawyer.phone}</p>
@@ -186,12 +208,18 @@ const AdminDashboard = () => {
                       📜 <a href={selectedLawyer.license_file.data} download={selectedLawyer.license_file.name}>License File</a>
                     </li>
                   )}
+                  {selectedLawyer.certificates && (
+                    <li>
+                      🏅 <a href={selectedLawyer.certificates.data} download={selectedLawyer.certificates.name}>Certificates</a>
+                    </li>
+                  )}
                 </ul>
               </div>
             ) : (
               <p>No lawyer selected.</p>
             )}
           </Modal.Body>
+
           <Modal.Footer>
             {!selectedLawyer?.verify_status && (
               <>
