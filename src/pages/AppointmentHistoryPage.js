@@ -2,45 +2,32 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button } from "react-bootstrap";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import {
-  FaUserTie,
-  FaCalendarAlt,
-  FaMoneyBill,
-  FaStickyNote,
-} from "react-icons/fa";
+import { FaUserTie, FaCalendarAlt, FaMoneyBill, FaStickyNote } from "react-icons/fa";
 
 function AppointmentHistoryPage() {
   const [appointments, setAppointments] = useState([]);
-  const [lawyers, setLawyers] = useState([]);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
+    // 🟢 Lấy toàn bộ appointments từ db.json
+    fetch("http://localhost:3001/appointments")
+      .then((res) => res.json())
+      .then(async (allAppointments) => {
         const user = JSON.parse(localStorage.getItem("loggedInUser"));
         if (!user) return;
 
-        // 🔹 Lấy dữ liệu từ db.json
-        const [appointmentsRes, lawyersRes] = await Promise.all([
-          fetch("http://localhost:3001/appointments"),
-          fetch("http://localhost:3001/lawyers"),
-        ]);
+        // 🟢 Lấy danh sách luật sư để hiển thị tên
+        const resLawyers = await fetch("http://localhost:3001/lawyers");
+        const allLawyers = await resLawyers.json();
 
-        const [allAppointments, allLawyers] = await Promise.all([
-          appointmentsRes.json(),
-          lawyersRes.json(),
-        ]);
-
-        setLawyers(allLawyers);
-
-        // 🔹 Ghép dữ liệu lawyer_name vào mỗi appointment
+        // 🟢 Lọc theo customer hiện tại
         const userAppointments = allAppointments
           .filter((a) => a.customer_id === user.id)
           .map((a) => {
             const lawyer = allLawyers.find((l) => l.id === a.lawyer_id);
             return {
               ...a,
-              lawyer_name: lawyer ? lawyer.name : `Lawyer #${a.lawyer_id}`,
+              lawyer_name: lawyer ? lawyer.name : "Unknown Lawyer",
               total_price: a.total_price ?? 0,
               slot_duration: a.slot_duration ?? 60,
               appointment_date: a.appointment_date || "N/A",
@@ -51,16 +38,12 @@ function AppointmentHistoryPage() {
           .sort((a, b) => {
             const dateA = new Date(`${a.appointment_date}T${a.appointment_time}`);
             const dateB = new Date(`${b.appointment_date}T${b.appointment_time}`);
-            return dateB - dateA;
+            return dateB - dateA; // mới nhất lên trên
           });
 
         setAppointments(userAppointments);
-      } catch (error) {
-        console.error("Error loading appointments:", error);
-      }
-    };
-
-    fetchData();
+      })
+      .catch((err) => console.error("Error loading appointments:", err));
   }, []);
 
   return (
@@ -103,8 +86,7 @@ function AppointmentHistoryPage() {
                         </td>
                         <td>{a.slot_duration} min</td>
                         <td>
-                          <FaMoneyBill className="me-2 text-success" />$
-                          {a.total_price.toFixed(2)}
+                          <FaMoneyBill className="me-2 text-success" />${a.total_price.toFixed(2)}
                         </td>
                         <td className="text-primary">{a.status}</td>
                         <td>
@@ -130,7 +112,7 @@ function AppointmentHistoryPage() {
         </div>
       </div>
 
-      {/* 🔹 Modal hiển thị chi tiết */}
+      {/* Modal chi tiết cuộc hẹn */}
       {selectedAppointment && (
         <Modal show={true} onHide={() => setSelectedAppointment(null)} centered>
           <Modal.Header closeButton>
@@ -150,8 +132,7 @@ function AppointmentHistoryPage() {
               <strong>Duration:</strong> {selectedAppointment.slot_duration} min
             </p>
             <p>
-              <strong>Total:</strong> $
-              {selectedAppointment.total_price.toFixed(2)}
+              <strong>Total:</strong> ${selectedAppointment.total_price.toFixed(2)}
             </p>
             <p>
               <strong>Status:</strong> {selectedAppointment.status}
