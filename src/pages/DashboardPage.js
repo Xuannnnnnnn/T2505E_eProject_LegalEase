@@ -213,7 +213,7 @@ const DashboardPage = () => {
             {recentAppointments.map((a, idx) => (
               <tr key={a.id}>
                 <td>{idx + 1}</td>
-                <td>{a.customer_id}</td>
+                <td>{a.customer_name}</td>
                 <td>{a.lawyer_name}</td>
                 <td>{a.appointment_date}</td>
                 <td>{a.appointment_time}</td>
