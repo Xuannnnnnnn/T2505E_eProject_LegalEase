@@ -1,12 +1,5 @@
-import React from "react";
-import SummaryCard from "../components/SummaryCard";
-import PaymentTable from "../components/PaymentTable";
-import {
-  summaryStats,
-  earningsChartData,
-  paymentHistory,
-} from "../data/earningsData";
-
+import React, { useEffect, useState } from "react";
+import { Card, Table, Spinner, Badge } from "react-bootstrap";
 import {
   LineChart,
   Line,
@@ -16,59 +9,165 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-function PaymentEarningsPage() {
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">
-        Earnings & Payments
-      </h1>
+const BASE_URL = "http://localhost:3001";
 
-      {/* Tổng quan thu nhập */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <SummaryCard
-          title="Total Earnings"
-          value={`$${summaryStats.totalEarnings}`}
-          color="text-green-600"
-        />
-        <SummaryCard
-          title="Total Transactions"
-          value={summaryStats.totalTransactions}
-          color="text-blue-600"
-        />
-        <SummaryCard
-          title="Pending Payout"
-          value={`$${summaryStats.pendingPayout}`}
-          color="text-yellow-600"
-        />
+function PaymentEarningsPage() {
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [summary, setSummary] = useState({
+    totalEarnings: 0,
+    totalTransactions: 0,
+    pendingPayout: 0,
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/transactions`);
+        if (!res.ok) throw new Error("Failed to fetch transactions");
+        const data = await res.json();
+
+        setTransactions(data);
+
+        // ✅ Tính tổng hợp
+        const successTx = data.filter((t) => t.status === "Success");
+        const pendingTx = data.filter((t) => t.status === "Pending");
+
+        const totalEarnings = successTx.reduce(
+          (sum, t) => sum + Number(t.amount || 0),
+          0
+        );
+        const pendingPayout = pendingTx.reduce(
+          (sum, t) => sum + Number(t.amount || 0),
+          0
+        );
+
+        setSummary({
+          totalEarnings,
+          totalTransactions: data.length,
+          pendingPayout,
+        });
+      } catch (err) {
+        console.error("Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // ✅ Chuẩn bị dữ liệu cho biểu đồ theo tháng
+  const earningsChartData = transactions.reduce((acc, t) => {
+    if (!t.date) return acc;
+    const month = new Date(t.date).toLocaleString("en-US", {
+      month: "short",
+    });
+    const found = acc.find((x) => x.month === month);
+    if (found) found.earnings += Number(t.amount);
+    else acc.push({ month, earnings: Number(t.amount) });
+    return acc;
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="text-center my-5">
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container my-5">
+      <h3 className="fw-bold text-primary mb-4">💰 Earnings & Payments</h3>
+
+      {/* Thống kê tổng quan */}
+      <div className="row g-3 mb-4">
+        <div className="col-md-4">
+          <Card className="shadow-sm border-0 p-3 text-center">
+            <h6 className="text-muted">Total Earnings</h6>
+            <h4 className="text-success fw-bold">
+              ${summary.totalEarnings.toFixed(2)}
+            </h4>
+          </Card>
+        </div>
+        <div className="col-md-4">
+          <Card className="shadow-sm border-0 p-3 text-center">
+            <h6 className="text-muted">Total Transactions</h6>
+            <h4 className="text-primary fw-bold">{summary.totalTransactions}</h4>
+          </Card>
+        </div>
+        <div className="col-md-4">
+          <Card className="shadow-sm border-0 p-3 text-center">
+            <h6 className="text-muted">Pending Payout</h6>
+            <h4 className="text-warning fw-bold">
+              ${summary.pendingPayout.toFixed(2)}
+            </h4>
+          </Card>
+        </div>
       </div>
 
       {/* Biểu đồ thu nhập */}
-      <div className="bg-white rounded-2xl shadow-md mb-8 p-6 border border-gray-100">
-        <h2 className="text-lg font-semibold mb-4 text-gray-700">
-          Monthly Earnings
-        </h2>
+      <Card className="shadow-sm border-0 p-4 mb-4">
+        <h5 className="mb-3 text-secondary">📈 Monthly Earnings</h5>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={earningsChartData}>
-            <XAxis dataKey="month" stroke="#888" />
+            <XAxis dataKey="month" />
             <YAxis />
             <Tooltip />
             <Line
               type="monotone"
               dataKey="earnings"
-              stroke="#4F46E5"
+              stroke="#007bff"
               strokeWidth={3}
             />
           </LineChart>
         </ResponsiveContainer>
-      </div>
+      </Card>
 
-      {/* Bảng lịch sử thanh toán */}
-      <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
-        <h2 className="text-lg font-semibold mb-4 text-gray-700">
-          Payment History
-        </h2>
-        <PaymentTable data={paymentHistory} />
-      </div>
+      {/* Bảng lịch sử giao dịch */}
+      <Card className="shadow-sm border-0 p-4">
+        <h5 className="mb-3 text-secondary">🧾 Payment History</h5>
+        <Table bordered hover responsive>
+          <thead className="table-light">
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Customer ID</th>
+              <th>Lawyer ID</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Method</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.map((t, idx) => (
+              <tr key={t.id}>
+                <td>{idx + 1}</td>
+                <td>{new Date(t.date).toLocaleDateString()}</td>
+                <td>{t.customer_id}</td>
+                <td>{t.lawyer_id}</td>
+                <td>${t.amount.toFixed(2)}</td>
+                <td>
+                  <Badge
+                    bg={
+                      t.status === "Success"
+                        ? "success"
+                        : t.status === "Pending"
+                        ? "warning"
+                        : "secondary"
+                    }
+                  >
+                    {t.status}
+                  </Badge>
+                </td>
+                <td>{t.payment_method}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </Card>
     </div>
   );
 }

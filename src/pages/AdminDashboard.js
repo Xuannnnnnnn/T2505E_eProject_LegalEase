@@ -11,7 +11,7 @@ import DashboardPage from "./DashboardPage";
 const BASE_URL = "http://localhost:3001";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState("lawyers");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [lawyers, setLawyers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLawyer, setSelectedLawyer] = useState(null);

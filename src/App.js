@@ -69,6 +69,7 @@ function App() {
 
           {/* Trang thanh toán */}
           <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/payment-earnings" element={<PaymentEarningsPage />} />
 
           {/* Trang xác nhận thanh toán thành công */}
           <Route path="/payment-success" element={<PaymentSuccess />} />

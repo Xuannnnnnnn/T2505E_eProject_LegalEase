@@ -1,5 +1,14 @@
+// src/pages/ManageTransactionsPage.jsx
 import React, { useState, useEffect } from "react";
-import { Table, Button, Badge, Modal, Spinner } from "react-bootstrap";
+import {
+  Table,
+  Button,
+  Badge,
+  Modal,
+  Spinner,
+  Card,
+  Form,
+} from "react-bootstrap";
 
 const BASE_URL = "http://localhost:3001";
 
@@ -9,34 +18,47 @@ const ManageTransactionsPage = () => {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  // 🔹 Load toàn bộ dữ liệu
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1️⃣ Lấy transactions
-        const resTx = await fetch(`${BASE_URL}/transactions`);
-        if (!resTx.ok) throw new Error("Failed to fetch transactions");
-        const txData = await resTx.json();
+        const [resTx, resCus, resLaw, resAppt] = await Promise.all([
+          fetch(`${BASE_URL}/transactions`),
+          fetch(`${BASE_URL}/customers`),
+          fetch(`${BASE_URL}/lawyers`),
+          fetch(`${BASE_URL}/appointments`),
+        ]);
 
-        // 2️⃣ Lấy customers
-        const resCus = await fetch(`${BASE_URL}/customers`);
-        if (!resCus.ok) throw new Error("Failed to fetch customers");
-        const customers = await resCus.json();
+        if (!resTx.ok || !resCus.ok || !resLaw.ok || !resAppt.ok)
+          throw new Error("Failed to fetch data");
 
-        // 3️⃣ Lấy lawyers
-        const resLaw = await fetch(`${BASE_URL}/lawyers`);
-        if (!resLaw.ok) throw new Error("Failed to fetch lawyers");
-        const lawyers = await resLaw.json();
+        const [txData, customers, lawyers, appointments] = await Promise.all([
+          resTx.json(),
+          resCus.json(),
+          resLaw.json(),
+          resAppt.json(),
+        ]);
 
-        // 4️⃣ Map customer_name và lawyer_name
+        // 🔹 Map transaction với appointment, customer và lawyer
         const mappedData = txData.map((t) => {
-          const customer = customers.find((c) => Number(c.id) === Number(t.id));
-          const lawyer = lawyers.find((l) => Number(l.id) === Number(t.id));
-          return {
+        const appt = appointments.find(
+            (a) => Number(a.id) === Number(t.appointment_id)
+        );
+        const customer = customers.find(
+            (c) => String(c.id) === String(appt?.customer_id || t.customer_id)
+        );
+        const lawyer = lawyers.find(
+            (l) => String(l.id) === String(appt?.lawyer_id || t.lawyer_id)
+        );
+
+        return {
             ...t,
-            customer_name: customer ? customer.name : "Unknown Customer",
-            lawyer_name: lawyer ? lawyer.name : "Unknown Lawyer",
-          };
+            appointment_date: appt?.appointment_date || "",
+            customer_name: customer ? customer.fullname : "Unknown Customer",
+            lawyer_name: lawyer ? lawyer.fullname || lawyer.name : "Unknown Lawyer",
+        };
         });
+
 
         setTransactions(mappedData);
       } catch (err) {
@@ -49,6 +71,7 @@ const ManageTransactionsPage = () => {
     fetchData();
   }, []);
 
+  // 🔹 Cập nhật trạng thái thanh toán
   const handleStatusChange = async (t, newStatus) => {
     try {
       const res = await fetch(`${BASE_URL}/transactions/${t.id}`, {
@@ -77,74 +100,88 @@ const ManageTransactionsPage = () => {
 
   return (
     <div className="container my-5">
-      <h3 className="fw-bold mb-4 text-primary">💰 Manage Transactions</h3>
-      <Table bordered hover responsive className="bg-white shadow-sm">
-        <thead className="table-light">
-          <tr>
-            <th>#</th>
-            <th>Customer</th>
-            <th>Lawyer</th>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {transactions.map((t, idx) => (
-            <tr key={t.id}>
-              <td>{idx + 1}</td>
-              <td>{t.customer_name}</td>
-              <td>{t.lawyer_name}</td>
-              <td>{new Date(t.date).toLocaleDateString()}</td>
-              <td>${t.amount.toFixed(2)}</td>
-              <td>
-                <Badge
-                  bg={
-                    t.status === "Success"
-                      ? "success"
-                      : t.status === "Failed"
-                      ? "danger"
-                      : "warning"
-                  }
-                >
-                  {t.status}
-                </Badge>
-              </td>
-              <td>
-                <select
-                  className="form-select form-select-sm d-inline w-auto me-2"
-                  value={t.status}
-                  onChange={(e) => handleStatusChange(t, e.target.value)}
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Success">Success</option>
-                  <option value="Failed">Failed</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
-                <Button
-                  size="sm"
-                  variant="info"
-                  onClick={() => {
-                    setSelectedTransaction(t);
-                    setShowModal(true);
-                  }}
-                >
-                  View
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      <Card className="shadow-sm">
+        <Card.Header className="bg-primary text-white fw-bold">
+          💰 Manage Transactions
+        </Card.Header>
+        <Card.Body>
+          <Table bordered hover responsive className="align-middle">
+            <thead className="table-light">
+              <tr>
+                <th>#</th>
+                <th>Customer</th>
+                <th>Lawyer</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((t, idx) => (
+                <tr key={t.id}>
+                  <td>{idx + 1}</td>
+                  <td>{t.customer_name}</td>
+                  <td>{t.lawyer_name}</td>
+                  <td>
+                    {t.appointment_date
+                      ? new Date(t.appointment_date).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td>${t.amount?.toFixed(2) || "0.00"}</td>
+                  <td>
+                    <Badge
+                      bg={
+                        t.status === "Success"
+                          ? "success"
+                          : t.status === "Failed"
+                          ? "danger"
+                          : t.status === "Cancelled"
+                          ? "secondary"
+                          : "warning"
+                      }
+                    >
+                      {t.status}
+                    </Badge>
+                  </td>
+                  <td>
+                    <Form.Select
+                      size="sm"
+                      className="d-inline w-auto me-2"
+                      value={t.status}
+                      onChange={(e) => handleStatusChange(t, e.target.value)}
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Success">Success</option>
+                      <option value="Failed">Failed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </Form.Select>
+                    <Button
+                      size="sm"
+                      variant="info"
+                      onClick={() => {
+                        setSelectedTransaction(t);
+                        setShowModal(true);
+                      }}
+                    >
+                      View
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Card.Body>
+      </Card>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered size="md">
+      {/* 🔹 Modal chi tiết */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Transaction Details</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {selectedTransaction ? (
-            <div>
+            <>
               <p>
                 <strong>Customer:</strong> {selectedTransaction.customer_name}
               </p>
@@ -152,10 +189,16 @@ const ManageTransactionsPage = () => {
                 <strong>Lawyer:</strong> {selectedTransaction.lawyer_name}
               </p>
               <p>
-                <strong>Date:</strong> {new Date(selectedTransaction.date).toLocaleString()}
+                <strong>Appointment Date:</strong>{" "}
+                {selectedTransaction.appointment_date
+                  ? new Date(
+                      selectedTransaction.appointment_date
+                    ).toLocaleString()
+                  : "N/A"}
               </p>
               <p>
-                <strong>Amount:</strong> ${selectedTransaction.amount.toFixed(2)}
+                <strong>Amount:</strong> $
+                {selectedTransaction.amount?.toFixed(2) || "0.00"}
               </p>
               <p>
                 <strong>Status:</strong> {selectedTransaction.status}
@@ -165,7 +208,7 @@ const ManageTransactionsPage = () => {
                   <strong>Notes:</strong> {selectedTransaction.notes}
                 </p>
               )}
-            </div>
+            </>
           ) : (
             <p>No transaction selected.</p>
           )}

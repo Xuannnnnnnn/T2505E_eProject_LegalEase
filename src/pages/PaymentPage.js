@@ -3,11 +3,13 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
   FaQrcode,
   FaCreditCard,
-  FaMoneyBillWave, // Giữ lại các icon có dùng
+  FaMoneyBillWave,
 } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import qrImage from "../assets/qr_example.png"; // ảnh QR thật
+import qrImage from "../assets/qr_example.png";
+
+const BASE_URL = "http://localhost:3001";
 
 function PaymentPage() {
   const navigate = useNavigate();
@@ -28,27 +30,40 @@ function PaymentPage() {
     );
   }
 
-  const handlePayment = (e) => {
+  const handlePayment = async (e) => {
     e.preventDefault();
-
     if (!paymentMethod) {
       alert("Please choose a payment method.");
       return;
     }
 
-    // ✅ Save appointment to localStorage
-    const existing = JSON.parse(localStorage.getItem("appointments")) || [];
-    const newAppointment = {
-      ...appointment,
+    const newTransaction = {
       id: Date.now(),
-      status: "Paid",
+      customer_id: appointment.customer_id || 1,
+      lawyer_id: appointment.lawyer_id,
+      appointment_id: appointment.id || null,
+      date: new Date().toISOString(),
+      amount: appointment.total_price,
+      status: "Success",
       payment_method: paymentMethod,
+      notes: "Auto-created from PaymentPage",
     };
-    existing.push(newAppointment);
-    localStorage.setItem("appointments", JSON.stringify(existing));
 
-    setIsPaid(true);
-    setTimeout(() => navigate("/payment-success"), 1500);
+    try {
+      const res = await fetch(`${BASE_URL}/transactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTransaction),
+      });
+
+      if (!res.ok) throw new Error("Failed to save transaction");
+
+      setIsPaid(true);
+      setTimeout(() => navigate("/payment-success"), 1500);
+    } catch (err) {
+      console.error(err);
+      alert("Payment successful locally but failed to save to database.");
+    }
   };
 
   return (
@@ -106,7 +121,6 @@ function PaymentPage() {
                   </button>
                 </div>
 
-                {/* === QR PAYMENT === */}
                 {paymentMethod === "QR Code" && (
                   <div className="text-center mt-4">
                     <h6>Scan this QR to complete your payment</h6>
@@ -126,7 +140,6 @@ function PaymentPage() {
                   </div>
                 )}
 
-                {/* === CREDIT CARD FORM === */}
                 {paymentMethod === "Credit Card" && (
                   <div className="mt-4">
                     <div className="mb-3">
@@ -179,7 +192,7 @@ function PaymentPage() {
             ) : (
               <div className="text-center my-5">
                 <h3>✅ Payment Successful!</h3>
-                <p>Your transaction has been processed successfully.</p>
+                <p>Your transaction has been saved to the system.</p>
               </div>
             )}
           </div>
