@@ -13,8 +13,9 @@ const LawyerDashboard = () => {
   const [activeTab, setActiveTab] = useState("schedule");
   const [appointments, setAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [viewingAppointment, setViewingAppointment] = useState(null); // ✅ State cho modal View
 
-  // ✅ Kiểm tra login luật sư
+  // Kiểm tra login luật sư
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("loggedInUser"));
     const role = localStorage.getItem("userRole");
@@ -26,12 +27,14 @@ const LawyerDashboard = () => {
     setLoggedLawyer(storedUser);
   }, [navigate]);
 
-  // ✅ Load appointments khi vào tab Appointments
+  // Load appointments khi vào tab Appointments
   useEffect(() => {
     if (!loggedLawyer || activeTab !== "appointments") return;
 
     setLoadingAppointments(true);
-    fetch(`${API_BASE}/appointments?lawyer_id=${loggedLawyer.lawyer_id || loggedLawyer.id}`)
+    fetch(
+      `${API_BASE}/appointments?lawyer_id=${loggedLawyer.lawyer_id || loggedLawyer.id}`
+    )
       .then((res) => res.json())
       .then((data) => {
         setAppointments(data);
@@ -43,7 +46,7 @@ const LawyerDashboard = () => {
       });
   }, [loggedLawyer, activeTab]);
 
-  // ✅ Update status appointment
+  // Update trạng thái appointment
   const updateAppointmentStatus = async (a, status) => {
     try {
       const res = await fetch(`${API_BASE}/appointments/${a.id}`, {
@@ -66,7 +69,7 @@ const LawyerDashboard = () => {
   const handleApprove = (a) => updateAppointmentStatus(a, "approved");
   const handleReject = (a) => updateAppointmentStatus(a, "rejected");
 
-  // ✅ Logout
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("userRole");
@@ -74,10 +77,14 @@ const LawyerDashboard = () => {
   };
 
   if (!loggedLawyer) {
-    return <div className="text-center mt-5 text-secondary">Loading dashboard...</div>;
+    return (
+      <div className="text-center mt-5 text-secondary">
+        Loading dashboard...
+      </div>
+    );
   }
 
-  // ✅ Component Profile View/Edit
+  // Component Profile View/Edit
   const ProfileSection = ({ lawyer, onSave }) => {
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({ ...lawyer });
@@ -311,51 +318,121 @@ const LawyerDashboard = () => {
       <div className="flex-grow-1 p-4 overflow-auto">
         <h3 className="mb-4 text-primary">Lawyer Dashboard</h3>
 
+        {/* Tabs */}
         <div className="mb-3">
           <button
-            className={`btn me-2 ${activeTab === "schedule" ? "btn-primary" : "btn-outline-primary"}`}
+            className={`btn me-2 ${
+              activeTab === "schedule" ? "btn-primary" : "btn-outline-primary"
+            }`}
             onClick={() => setActiveTab("schedule")}
           >
             Manage Schedule
           </button>
           <button
-            className={`btn me-2 ${activeTab === "appointments" ? "btn-primary" : "btn-outline-primary"}`}
+            className={`btn me-2 ${
+              activeTab === "appointments" ? "btn-primary" : "btn-outline-primary"
+            }`}
             onClick={() => setActiveTab("appointments")}
           >
             Appointments
           </button>
           <button
-            className={`btn ${activeTab === "profile" ? "btn-primary" : "btn-outline-primary"}`}
+            className={`btn ${
+              activeTab === "profile" ? "btn-primary" : "btn-outline-primary"
+            }`}
             onClick={() => setActiveTab("profile")}
           >
             My Profile
           </button>
         </div>
 
+        {/* Schedule Tab */}
         {activeTab === "schedule" && (
           <div>
             <h5>Configure your available slots</h5>
-            <LawyerScheduleManager lawyerId={loggedLawyer.id || loggedLawyer.lawyer_id} />
+            <LawyerScheduleManager
+              lawyerId={loggedLawyer.id || loggedLawyer.lawyer_id}
+            />
           </div>
         )}
 
+        {/* Appointments Tab */}
         {activeTab === "appointments" && (
           <div>
             <h5>Customer Appointments</h5>
             {loadingAppointments ? (
               <div>Loading appointments...</div>
             ) : (
-              <AppointmentsTable
-                appointments={appointments}
-                role="lawyer"
-                onApprove={handleApprove}
-                onReject={handleReject}
-                showDetails={true}
-              />
+              <>
+                <AppointmentsTable
+                  appointments={appointments}
+                  role="lawyer"
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                  onView={(a) => setViewingAppointment(a)}
+                />
+
+                {/* Modal hiển thị chi tiết khi View */}
+                {viewingAppointment && (
+                  <div
+                    className="modal fade show"
+                    style={{
+                      display: "block",
+                      backgroundColor: "rgba(0,0,0,0.5)",
+                    }}
+                  >
+                    <div className="modal-dialog modal-dialog-centered">
+                      <div className="modal-content border-0 rounded-4">
+                        <div className="modal-header bg-primary text-white">
+                          <h5>Appointment Details</h5>
+                          <button
+                            className="btn-close btn-close-white"
+                            onClick={() => setViewingAppointment(null)}
+                          ></button>
+                        </div>
+                        <div className="modal-body">
+                          <p>
+                            <strong>Customer:</strong>{" "}
+                            {viewingAppointment.customer_name}
+                          </p>
+                          <p>
+                            <strong>Date & Time:</strong>{" "}
+                            {viewingAppointment.appointment_date}{" "}
+                            {viewingAppointment.appointment_time}
+                          </p>
+                          <p>
+                            <strong>Duration:</strong>{" "}
+                            {viewingAppointment.slot_duration} min
+                          </p>
+                          <p>
+                            <strong>Total Price:</strong> $
+                            {viewingAppointment.total_price?.toFixed(2)}
+                          </p>
+                          <p>
+                            <strong>Status:</strong> {viewingAppointment.status}
+                          </p>
+                          <p>
+                            <strong>Notes:</strong> {viewingAppointment.notes || "-"}
+                          </p>
+                        </div>
+                        <div className="modal-footer">
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() => setViewingAppointment(null)}
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
 
+        {/* Profile Tab */}
         {activeTab === "profile" && (
           <div>
             <h5>My Profile</h5>

@@ -1,50 +1,76 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button } from "react-bootstrap";
+import { Modal, Button, Spinner } from "react-bootstrap";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { FaUserTie, FaCalendarAlt, FaMoneyBill, FaStickyNote } from "react-icons/fa";
 
+const BASE_URL = "http://localhost:3001";
+
 function AppointmentHistoryPage() {
   const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   useEffect(() => {
-    // 🟢 Lấy toàn bộ appointments từ db.json
-    fetch("http://localhost:3001/appointments")
-      .then((res) => res.json())
-      .then(async (allAppointments) => {
+    const fetchData = async () => {
+      try {
         const user = JSON.parse(localStorage.getItem("loggedInUser"));
         if (!user) return;
 
-        // 🟢 Lấy danh sách luật sư để hiển thị tên
-        const resLawyers = await fetch("http://localhost:3001/lawyers");
+        // 1️⃣ Lấy toàn bộ appointments
+        const resAppointments = await fetch(`${BASE_URL}/appointments`);
+        const allAppointments = await resAppointments.json();
+
+        // 2️⃣ Lấy toàn bộ transactions
+        const resTransactions = await fetch(`${BASE_URL}/transactions`);
+        const allTransactions = await resTransactions.json();
+
+        // 3️⃣ Lấy toàn bộ lawyers
+        const resLawyers = await fetch(`${BASE_URL}/lawyers`);
         const allLawyers = await resLawyers.json();
 
-        // 🟢 Lọc theo customer hiện tại
+        // 4️⃣ Lọc theo customer hiện tại và kết hợp transactions
         const userAppointments = allAppointments
           .filter((a) => a.customer_id === user.id)
           .map((a) => {
             const lawyer = allLawyers.find((l) => l.id === a.lawyer_id);
+            const transaction = allTransactions.find((t) => t.appointment_id === a.id);
+
             return {
               ...a,
               lawyer_name: lawyer ? lawyer.name : "Unknown Lawyer",
-              total_price: a.total_price ?? 0,
+              total_price: transaction ? transaction.amount : a.total_price ?? 0,
+              transaction_status: transaction ? transaction.status : "Pending",
               slot_duration: a.slot_duration ?? 60,
               appointment_date: a.appointment_date || "N/A",
               appointment_time: a.appointment_time || "N/A",
               notes: a.notes || "-",
             };
           })
-          .sort((a, b) => {
-            const dateA = new Date(`${a.appointment_date}T${a.appointment_time}`);
-            const dateB = new Date(`${b.appointment_date}T${b.appointment_time}`);
-            return dateB - dateA; // mới nhất lên trên
-          });
+          .sort(
+            (a, b) =>
+              new Date(`${b.appointment_date}T${b.appointment_time}`) -
+              new Date(`${a.appointment_date}T${a.appointment_time}`)
+          );
 
         setAppointments(userAppointments);
-      })
-      .catch((err) => console.error("Error loading appointments:", err));
+      } catch (err) {
+        console.error("Error loading appointments:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="text-center mt-5">
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -67,6 +93,7 @@ function AppointmentHistoryPage() {
                       <th>Date</th>
                       <th>Duration</th>
                       <th>Total</th>
+                      <th>Payment Status</th>
                       <th>Status</th>
                       <th>Notes</th>
                       <th>View</th>
@@ -86,7 +113,19 @@ function AppointmentHistoryPage() {
                         </td>
                         <td>{a.slot_duration} min</td>
                         <td>
-                          <FaMoneyBill className="me-2 text-success" />${a.total_price.toFixed(2)}
+                          <FaMoneyBill className="me-2 text-success" />
+                          ${a.total_price.toFixed(2)}
+                        </td>
+                        <td
+                          className={
+                            a.transaction_status === "Success"
+                              ? "text-success"
+                              : a.transaction_status === "Failed"
+                              ? "text-danger"
+                              : "text-warning"
+                          }
+                        >
+                          {a.transaction_status}
                         </td>
                         <td className="text-primary">{a.status}</td>
                         <td>
@@ -112,7 +151,7 @@ function AppointmentHistoryPage() {
         </div>
       </div>
 
-      {/* Modal chi tiết cuộc hẹn */}
+      {/* Modal chi tiết */}
       {selectedAppointment && (
         <Modal show={true} onHide={() => setSelectedAppointment(null)} centered>
           <Modal.Header closeButton>
@@ -135,7 +174,11 @@ function AppointmentHistoryPage() {
               <strong>Total:</strong> ${selectedAppointment.total_price.toFixed(2)}
             </p>
             <p>
-              <strong>Status:</strong> {selectedAppointment.status}
+              <strong>Payment Status:</strong>{" "}
+              {selectedAppointment.transaction_status}
+            </p>
+            <p>
+              <strong>Appointment Status:</strong> {selectedAppointment.status}
             </p>
             <p>
               <strong>Notes:</strong> {selectedAppointment.notes}

@@ -9,72 +9,112 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+const BASE_URL = "http://localhost:3001";
+
 const AdminExpenseManagementPage = () => {
   const [startDate, setStartDate] = useState("2025-10-01");
   const [endDate, setEndDate] = useState("2025-10-31");
-  const [filterType, setFilterType] = useState("income");
+  const [filterType, setFilterType] = useState("income"); // income | commission
   const [lawyers, setLawyers] = useState([]);
   const [incomeDetails, setIncomeDetails] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [editMode, setEditMode] = useState(null);
 
+  // Fetch lawyers & fees data from db.json
   useEffect(() => {
-    const lawyerData = [
-      { id: 1, name: "Nguyễn Văn A", hourlyRate: 120, commission: 10, discount_2_3h: 5, discount_3h: 10 },
-      { id: 2, name: "Trần Thị B", hourlyRate: 150, commission: 12, discount_2_3h: 7, discount_3h: 12 },
-      { id: 3, name: "Lê Hoàng C", hourlyRate: 100, commission: 8, discount_2_3h: 4, discount_3h: 9 },
-    ];
+    const fetchData = async () => {
+      try {
+        const lawyerRes = await fetch(`${BASE_URL}/lawyers`);
+        const lawyerData = await lawyerRes.json();
+        setLawyers(
+          lawyerData.map((l) => ({
+            id: l.id,
+            name: l.name,
+            hourlyRate: l.hourly_rate || 0,
+            commission: l.commission || 0,
+            discount_2_3h: l.discount_2_3h || 0,
+            discount_3h: l.discount_3h || 0,
+          }))
+        );
 
-    const incomeData = [
-      { lawyer: "Nguyễn Văn A", hours: 20, appointments: 5, revenue: 2400, commission: 240, lawyerIncome: 2160 },
-      { lawyer: "Trần Thị B", hours: 25, appointments: 6, revenue: 3750, commission: 450, lawyerIncome: 3300 },
-      { lawyer: "Lê Hoàng C", hours: 15, appointments: 3, revenue: 1500, commission: 120, lawyerIncome: 1380 },
-    ];
+        // Assume you have a table "appointments" to calculate income
+        const appointmentsRes = await fetch(`${BASE_URL}/appointments`);
+        const appointments = await appointmentsRes.json();
 
-    const chart = [
-      { name: "Tuần 1", value: 800 },
-      { name: "Tuần 2", value: 1200 },
-      { name: "Tuần 3", value: 1000 },
-      { name: "Tuần 4", value: 1500 },
-    ];
+        const income = lawyerData.map((lawyer) => {
+          const lawyerAppointments = appointments.filter(
+            (a) => a.lawyer_id === lawyer.id
+          );
+          const hours = lawyerAppointments.reduce(
+            (sum, a) => sum + (a.duration_minutes / 60 || 0),
+            0
+          );
+          const revenue = hours * (lawyer.hourly_rate || 0);
+          const commission = (lawyer.commission || 0) / 100 * revenue;
+          const lawyerIncome = revenue - commission;
+          return {
+            lawyer: lawyer.name,
+            hours: Math.round(hours),
+            appointments: lawyerAppointments.length,
+            revenue,
+            commission,
+            lawyerIncome,
+          };
+        });
 
-    setLawyers(lawyerData);
-    setIncomeDetails(incomeData);
-    setChartData(chart);
+        setIncomeDetails(income);
+
+        // Dummy chart data, you can replace with real weekly/monthly aggregation
+        setChartData([
+          { name: "Week 1", value: 800 },
+          { name: "Week 2", value: 1200 },
+          { name: "Week 3", value: 1000 },
+          { name: "Week 4", value: 1500 },
+        ]);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const handleSearch = () => alert(`Thống kê từ ${startDate} đến ${endDate} (${filterType})`);
+  const handleSearch = () =>
+    alert(`Statistics from ${startDate} to ${endDate} (${filterType})`);
+
   const handleEdit = (id) => setEditMode(id);
   const handleSave = () => {
-    alert("Đã lưu thay đổi!");
-    setEditMode(null); 
+    alert("Changes saved!");
+    setEditMode(null);
   };
 
   const handleChange = (id, field, value) => {
-    setLawyers((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
+    setLawyers((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, [field]: value } : l))
+    );
   };
 
   const formatCurrency = (num) => `$${Math.round(num)}`;
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
-      <h2 className="text-2xl font-bold mb-6 text-blue-600">Quản lý chi phí & thu nhập luật sư</h2>
+      <h2 className="text-2xl font-bold mb-6 text-blue-600">
+        Lawyer Fees & Income Management
+      </h2>
 
-      {/* --- Bộ lọc thống kê --- */}
+      {/* Filter Section */}
       <div className="bg-white p-5 rounded-xl shadow mb-6 flex flex-wrap items-end justify-between gap-6">
         <div className="flex flex-col gap-4 w-full md:w-auto">
-          <label className="text-sm font-semibold">Khoảng thời gian:</label>
-          <br />
+          <label className="text-sm font-semibold">Date Range:</label>
           <div className="flex items-center gap-3 whitespace-nowrap">
-            <br />
-            <span className="text-sm">Từ         </span>
+            <span className="text-sm">From</span>
             <input
               type="date"
               className="border rounded-md p-2 focus:ring focus:ring-blue-200"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
-            <span className="text-sm"> Đến  </span>
+            <span className="text-sm">To</span>
             <input
               type="date"
               className="border rounded-md p-2 focus:ring focus:ring-blue-200"
@@ -82,33 +122,32 @@ const AdminExpenseManagementPage = () => {
               onChange={(e) => setEndDate(e.target.value)}
             />
           </div>
-          <br />
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-semibold">Kiểu thống kê:</label>
-            <br />
+
+          <div className="flex items-center gap-3 mt-2">
+            <label className="text-sm font-semibold">Statistic Type:</label>
             <select
               className="border rounded-md p-2 focus:ring focus:ring-blue-200"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
             >
-              <option value="income">Tổng thu nhập</option>
-              <option value="commission">Hoa hồng</option>
+              <option value="income">Total Income</option>
+              <option value="commission">Commission</option>
             </select>
           </div>
-          <br />
+
           <button
             onClick={handleSearch}
-            className="bg-blue-500 hover:bg-blue-600 text-black font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all w-fit"
+            className="bg-blue-500 hover:bg-blue-600 text-black font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all w-fit mt-2"
           >
-            🔍 Tìm kiếm
+            🔍 Search
           </button>
         </div>
       </div>
 
-      {/* --- Biểu đồ --- */}
+      {/* Chart Section */}
       <div className="bg-white p-5 rounded-xl shadow mb-8">
         <h3 className="text-lg font-semibold mb-3 text-blue-600">
-          Biểu đồ thống kê {filterType === "income" ? "thu nhập" : "hoa hồng"}
+          {filterType === "income" ? "Income" : "Commission"} Statistics
         </h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={chartData}>
@@ -121,18 +160,20 @@ const AdminExpenseManagementPage = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* --- Danh sách luật sư --- */}
+      {/* Lawyers List */}
       <div className="bg-white p-5 rounded-xl shadow mb-8">
-        <h3 className="text-lg font-semibold mb-3 text-blue-600">Danh sách luật sư</h3>
+        <h3 className="text-lg font-semibold mb-3 text-blue-600">
+          Lawyer List
+        </h3>
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-blue-50 text-blue-700">
-              <th className="border p-3 text-left">Tên luật sư</th>
-              <th className="border p-3 text-left">Chi phí/giờ ($)</th>
-              <th className="border p-3 text-left">Hoa hồng (%)</th>
+              <th className="border p-3 text-left">Lawyer Name</th>
+              <th className="border p-3 text-left">Hourly Rate ($)</th>
+              <th className="border p-3 text-left">Commission (%)</th>
               <th className="border p-3 text-left">Discount 2–3h (%)</th>
               <th className="border p-3 text-left">Discount &gt;3h (%)</th>
-              <th className="border p-3 text-center">Thao tác</th>
+              <th className="border p-3 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -145,7 +186,9 @@ const AdminExpenseManagementPage = () => {
                       type="number"
                       className="border rounded p-1 w-24"
                       value={l.hourlyRate}
-                      onChange={(e) => handleChange(l.id, "hourlyRate", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(l.id, "hourlyRate", e.target.value)
+                      }
                     />
                   ) : (
                     `$${Math.round(l.hourlyRate)}`
@@ -157,7 +200,9 @@ const AdminExpenseManagementPage = () => {
                       type="number"
                       className="border rounded p-1 w-20"
                       value={l.commission}
-                      onChange={(e) => handleChange(l.id, "commission", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(l.id, "commission", e.target.value)
+                      }
                     />
                   ) : (
                     `${Math.round(l.commission)}%`
@@ -169,7 +214,9 @@ const AdminExpenseManagementPage = () => {
                       type="number"
                       className="border rounded p-1 w-20"
                       value={l.discount_2_3h}
-                      onChange={(e) => handleChange(l.id, "discount_2_3h", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(l.id, "discount_2_3h", e.target.value)
+                      }
                     />
                   ) : (
                     `${Math.round(l.discount_2_3h)}%`
@@ -181,7 +228,9 @@ const AdminExpenseManagementPage = () => {
                       type="number"
                       className="border rounded p-1 w-20"
                       value={l.discount_3h}
-                      onChange={(e) => handleChange(l.id, "discount_3h", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(l.id, "discount_3h", e.target.value)
+                      }
                     />
                   ) : (
                     `${Math.round(l.discount_3h)}%`
@@ -210,18 +259,20 @@ const AdminExpenseManagementPage = () => {
         </table>
       </div>
 
-      {/* --- Chi tiết thu nhập --- */}
+      {/* Income Details */}
       <div className="bg-white p-5 rounded-xl shadow">
-        <h3 className="text-lg font-semibold mb-3 text-blue-600">Chi tiết thu nhập</h3>
+        <h3 className="text-lg font-semibold mb-3 text-blue-600">
+          Income Details
+        </h3>
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-blue-50 text-blue-700">
-              <th className="border p-3 text-left">Tên luật sư</th>
-              <th className="border p-3 text-left">Số giờ hoàn thành</th>
-              <th className="border p-3 text-left">Số cuộc hẹn</th>
-              <th className="border p-3 text-left">Tổng doanh thu ($)</th>
-              <th className="border p-3 text-left">Hoa hồng ($)</th>
-              <th className="border p-3 text-left">Luật sư nhận ($)</th>
+              <th className="border p-3 text-left">Lawyer Name</th>
+              <th className="border p-3 text-left">Completed Hours</th>
+              <th className="border p-3 text-left">Appointments</th>
+              <th className="border p-3 text-left">Total Revenue ($)</th>
+              <th className="border p-3 text-left">Commission ($)</th>
+              <th className="border p-3 text-left">Lawyer Income ($)</th>
             </tr>
           </thead>
           <tbody>
