@@ -29,6 +29,7 @@ import AdminExpenseManagementPage from "./pages/AdminExpenseManagementPage";
 
 // ✅ Styles
 import "bootstrap/dist/css/bootstrap.min.css";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 
 function App() {
@@ -83,12 +84,36 @@ function App() {
           <Route path="/admin/login" element={<LoginAdmin />} />
 
           {/* Trang dashboard Admin, Lawyer, Customer */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
           <Route path="/lawyer-dashboard" element={<LawyerDashboard />} />
           <Route path="/customer-dashboard" element={<CustomerDashboard />} />
           {/* Trang Appointments Admin */}
-          <Route path="/admin/appointments" element={<AdminAppointments />} />
+          {/* <Route path="/admin/appointments" element={<AdminAppointments />} /> */}
           <Route path="/lawyer/:id" element={<LawyerDetail />} />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <AdminProtectedRoute>
+                <AdminDashboard />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/appointments"
+            element={
+              <AdminProtectedRoute>
+                <AdminAppointments />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/expenses"
+            element={
+              <AdminProtectedRoute>
+                <AdminExpenseManagementPage />
+              </AdminProtectedRoute>
+            }
+          />
 
           {/* Trang lỗi 404 */}
           <Route
@@ -132,7 +157,7 @@ function App() {
           <Route path="/lawyer/profile" element={<LawyerProfilePage />} />
           <Route path="/notifications/customer" element={<CustomerNotificationsPage />} />
           <Route path="/notifications/lawyer" element={<LawyerNotificationsPage />} />
-          <Route path="/admin/expenses" element={<AdminExpenseManagementPage />} />
+          {/* <Route path="/admin/expenses" element={<AdminExpenseManagementPage />} /> */}
         </Routes>
       </main>
     </Router>

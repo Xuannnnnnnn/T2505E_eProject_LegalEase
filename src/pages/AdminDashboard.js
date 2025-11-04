@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ thêm dòng này
 import { Container, Table, Button, Badge, Modal, Spinner } from "react-bootstrap";
 import SidebarAdmin from "../components/SidebarAdmin";
 import AdminExpenseManagementPage from "./AdminExpenseManagementPage";
@@ -16,7 +17,20 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate(); // ✅ thêm dòng này ngay đầu hàm
+  // ✅ Kiểm tra xem admin đã đăng nhập chưa
+  useEffect(() => {
+    const isAdmin = localStorage.getItem("isAdmin");
+    if (!isAdmin) {
+      navigate("/admin/login");
+    }
+  }, [navigate]);
 
+  // ✅ Hàm đăng xuất
+  const handleLogout = () => {
+    localStorage.removeItem("isAdmin");
+    navigate("/admin/login");
+  };
   // Fetch lawyers
   useEffect(() => {
     const fetchLawyers = async () => {
@@ -283,7 +297,13 @@ const AdminDashboard = () => {
 
   return (
     <div className="d-flex">
-      <SidebarAdmin activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* 🟢 Thêm onLogout={handleLogout} ở đây */}
+      <SidebarAdmin
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onLogout={handleLogout}
+      />
+
       <Container fluid className="p-4">
         {renderTab()}
       </Container>
