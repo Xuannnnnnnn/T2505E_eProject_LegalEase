@@ -158,7 +158,7 @@ const ManageCustomerPage = () => {
         <Modal.Body>
           {selectedCustomer ? (
             <div>
-              <p><strong>Full Name:</strong> {selectedCustomer.name}</p>
+              <p><strong>Full Name:</strong> {selectedCustomer.fullname}</p>
               <p><strong>Email:</strong> {selectedCustomer.email}</p>
               <p><strong>Phone:</strong> {selectedCustomer.phone}</p>
               <p><strong>Address:</strong> {selectedCustomer.address || "-"}</p>

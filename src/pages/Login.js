@@ -34,11 +34,11 @@ const Login = () => {
         return;
       }
 
-      // Lưu thông tin người dùng
+      // ✅ Lưu thông tin người dùng
       localStorage.setItem("loggedInUser", JSON.stringify(user));
       localStorage.setItem("userRole", role);
 
-      // Nếu có redirect (ví dụ từ form đặt lịch)
+      // ✅ Nếu có redirect đặc biệt (ví dụ từ form đặt lịch)
       if (location.state?.appointmentForm && location.state?.redirectBack) {
         localStorage.setItem(
           "pendingAppointment",
@@ -46,9 +46,8 @@ const Login = () => {
         );
         navigate(location.state.redirectBack);
       } else {
-        // Điều hướng theo quyền
-        if (role === "customer") navigate("/customer-dashboard");
-        else navigate("/lawyer-dashboard");
+        // ✅ Mặc định: quay về trang chủ, KHÔNG vào dashboard
+        navigate("/");
       }
     } catch (err) {
       console.error("Login error:", err);
