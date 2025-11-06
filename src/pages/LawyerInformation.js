@@ -8,56 +8,89 @@ const BASE_URL = "http://localhost:3001";
 
 // Component hiển thị các slot lịch của luật sư
 const CustomerSchedule = ({ lawyerId, selectedDate, onSelectSlot }) => {
-  const [slotsStatus, setSlotsStatus] = useState({});
-  const slots = ["09:00", "11:00", "14:00", "16:00"];
+  const [slots, setSlots] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchSlots = async () => {
+    if (!lawyerId || !selectedDate) return;
+
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(
+        // 1️⃣ Lấy cấu hình lịch của luật sư (từ /schedules)
+        const scheduleRes = await fetch(
+          `${BASE_URL}/schedules?lawyer_id=${lawyerId}&date=${selectedDate}`
+        );
+        const scheduleData = await scheduleRes.json();
+
+        // Nếu có dữ liệu cấu hình thì lấy slot từ DB, không thì mặc định 4 khung
+        let configuredSlots = [];
+        if (scheduleData.length > 0) {
+          configuredSlots = scheduleData[0].slots;
+        } else {
+          configuredSlots = [
+            { time: "09:00", available: true },
+            { time: "11:00", available: true },
+            { time: "14:00", available: true },
+            { time: "16:00", available: true },
+          ];
+        }
+
+        // 2️⃣ Lấy danh sách cuộc hẹn đã được đặt (appointments)
+        const appointmentRes = await fetch(
           `${BASE_URL}/appointments?lawyer_id=${lawyerId}&appointment_date=${selectedDate}`
         );
-        const appointments = await res.json();
+        const appointments = await appointmentRes.json();
 
-        const status = {};
-        appointments.forEach((a) => {
-          status[a.appointment_time] = "busy";
+        // 3️⃣ Gộp 2 nguồn dữ liệu → nếu slot có khách đặt thì không khả dụng
+        const updatedSlots = configuredSlots.map((slot) => {
+          const isBooked = appointments.some(
+            (a) => a.appointment_time === slot.time
+          );
+          return { ...slot, available: slot.available && !isBooked };
         });
-        setSlotsStatus(status);
+
+        setSlots(updatedSlots);
       } catch (error) {
-        console.error("Error loading schedule:", error);
+        console.error("Error loading slots:", error);
+        setSlots([]);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchSlots();
-  }, [selectedDate, lawyerId]);
+
+    fetchData();
+  }, [lawyerId, selectedDate]);
 
   return (
     <div className="mb-3">
       <label>Select Time Slot:</label>
-      <div className="d-flex flex-wrap gap-2 mt-2">
-        {slots.map((slot) => {
-          const status = slotsStatus[slot] || "available";
-          return (
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <div className="d-flex flex-wrap gap-2 mt-2">
+          {slots.map((slot) => (
             <button
-              key={slot}
+              key={slot.time}
               type="button"
               className={`btn ${
-                status === "available"
+                slot.available
                   ? "btn-outline-primary"
                   : "btn-secondary disabled"
               }`}
               onClick={() =>
-                status === "available" && onSelectSlot(slot, selectedDate)
+                slot.available && onSelectSlot(slot.time, selectedDate)
               }
             >
-              {slot} ({status})
+              {slot.time} ({slot.available ? "available" : "busy"})
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
+
 
 function LawyerInformation() {
   const { id } = useParams();

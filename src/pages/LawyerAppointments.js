@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
+import { Modal, Button } from "react-bootstrap";
 import AppointmentsTable from "../components/AppointmentsTable";
 
 const BASE_URL = "http://localhost:3001";
 
 const LawyerAppointments = ({ lawyerId }) => {
-  const [appointments, setAppointments] = useState([]);
+  const [allAppointments, setAllAppointments] = useState([]); // dữ liệu gốc
+  const [appointments, setAppointments] = useState([]); // dữ liệu hiển thị
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  // 🔹 Bộ lọc
+  const [statusFilter, setStatusFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   // 🔹 Lấy danh sách appointments và map tên khách hàng
   useEffect(() => {
@@ -35,6 +41,7 @@ const LawyerAppointments = ({ lawyerId }) => {
             };
           });
 
+        setAllAppointments(filtered);
         setAppointments(filtered);
       } catch (error) {
         console.error("Error loading appointments:", error);
@@ -43,6 +50,34 @@ const LawyerAppointments = ({ lawyerId }) => {
 
     fetchData();
   }, [lawyerId]);
+
+  // 🔹 Tìm kiếm / lọc
+  const handleSearch = () => {
+    let filtered = [...allAppointments];
+
+    if (statusFilter)
+      filtered = filtered.filter((a) => a.status === statusFilter);
+
+    if (fromDate)
+      filtered = filtered.filter(
+        (a) => new Date(a.appointment_date) >= new Date(fromDate)
+      );
+
+    if (toDate)
+      filtered = filtered.filter(
+        (a) => new Date(a.appointment_date) <= new Date(toDate)
+      );
+
+    setAppointments(filtered);
+  };
+
+  // 🔹 Reset bộ lọc
+  const handleReset = () => {
+    setStatusFilter("");
+    setFromDate("");
+    setToDate("");
+    setAppointments(allAppointments);
+  };
 
   // 🔹 Cập nhật status
   const handleStatusChange = async (appointmentId, newStatus) => {
@@ -73,6 +108,54 @@ const LawyerAppointments = ({ lawyerId }) => {
     <div className="container my-5">
       <h4 className="mb-3 fw-bold text-primary">Your Appointments</h4>
 
+      {/* 🔍 Bộ lọc tìm kiếm */}
+      <div className="border rounded p-3 bg-light mb-4">
+        <h5 className="mb-3">Search Appointments</h5>
+        <div className="row g-3">
+          <div className="col-md-3">
+            <label>Status</label>
+            <select
+              className="form-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div className="col-md-3">
+            <label>From Date</label>
+            <input
+              type="date"
+              className="form-control"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+            />
+          </div>
+          <div className="col-md-3">
+            <label>To Date</label>
+            <input
+              type="date"
+              className="form-control"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+            />
+          </div>
+          <div className="col-md-3 d-flex align-items-end gap-2">
+            <button className="btn btn-primary w-100" onClick={handleSearch}>
+              Search
+            </button>
+            <button className="btn btn-secondary w-100" onClick={handleReset}>
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 🔹 Bảng hiển thị appointments */}
       <AppointmentsTable
         appointments={appointments}
         role="lawyer"
@@ -80,7 +163,7 @@ const LawyerAppointments = ({ lawyerId }) => {
         onView={handleView}
       />
 
-      {/* Modal chi tiết */}
+      {/* 🔹 Modal chi tiết */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Appointment Details</Modal.Title>
@@ -101,7 +184,8 @@ const LawyerAppointments = ({ lawyerId }) => {
                 min
               </p>
               <p>
-                <strong>Total:</strong> ${selectedAppointment.total_price?.toFixed(2)}
+                <strong>Total:</strong> $
+                {selectedAppointment.total_price?.toFixed(2)}
               </p>
               <p>
                 <strong>Status:</strong> {selectedAppointment.status}

@@ -4,8 +4,9 @@ const AppointmentForm = ({ lawyer, customer, onNewAppointment }) => {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
   const slots = ["09:00", "11:00", "14:00", "16:00"];
+  const BASE_URL = "http://localhost:3001";
 
-  const handleBook = (e) => {
+  const handleBook = async (e) => {
     e.preventDefault();
 
     if (!lawyer) {
@@ -17,25 +18,45 @@ const AppointmentForm = ({ lawyer, customer, onNewAppointment }) => {
       return;
     }
 
+    // ✅ Tạo dữ liệu cuộc hẹn
     const newAppointment = {
       appointment_id: Date.now(),
-      lawyer_id: lawyer.lawyer_id,
+      lawyer_id: lawyer.id,
       lawyer_name: lawyer.name,
       lawyer_specialization: lawyer.specialization || "General",
-      customer_id: customer.customer_id,
+      customer_id: customer.id,
       customer_name: customer.name,
+      customer_email: customer.email,
       appointment_date: selectedDate,
       appointment_time: selectedSlot,
       slot_duration: 60,
       total_price: lawyer.hourly_rate,
-      status: "pending",
+      status: "Pending",
     };
 
-    onNewAppointment(newAppointment);
-    alert("Appointment booked successfully!");
+    try {
+      // ✅ Gửi POST request để lưu vào db.json
+      const res = await fetch(`${BASE_URL}/appointments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newAppointment),
+      });
 
-    setSelectedDate("");
-    setSelectedSlot("");
+      if (!res.ok) throw new Error("Failed to save appointment");
+
+      const saved = await res.json();
+      alert("✅ Appointment booked successfully!");
+
+      // Cập nhật danh sách lịch hẹn trên UI (nếu có)
+      if (onNewAppointment) onNewAppointment(saved);
+
+      // Reset form
+      setSelectedDate("");
+      setSelectedSlot("");
+    } catch (err) {
+      console.error("Error saving appointment:", err);
+      alert("❌ Failed to book appointment. Please try again.");
+    }
   };
 
   return (
@@ -45,7 +66,11 @@ const AppointmentForm = ({ lawyer, customer, onNewAppointment }) => {
         <input
           type="text"
           className="form-control"
-          value={lawyer ? `${lawyer.name} - $${lawyer.hourly_rate}/h` : "No lawyer selected"}
+          value={
+            lawyer
+              ? `${lawyer.name} - $${lawyer.hourly_rate}/h`
+              : "No lawyer selected"
+          }
           readOnly
         />
       </div>
@@ -67,7 +92,9 @@ const AppointmentForm = ({ lawyer, customer, onNewAppointment }) => {
             <button
               key={slot}
               type="button"
-              className={`btn ${selectedSlot === slot ? "btn-primary" : "btn-outline-primary"}`}
+              className={`btn ${
+                selectedSlot === slot ? "btn-primary" : "btn-outline-primary"
+              }`}
               onClick={() => setSelectedSlot(slot)}
             >
               {slot}

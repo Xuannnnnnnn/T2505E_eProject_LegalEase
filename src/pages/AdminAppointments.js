@@ -9,7 +9,7 @@ const AdminAppointments = () => {
   const [lawyerFilter, setLawyerFilter] = useState("all");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
-  // 🔹 Load dữ liệu từ JSON-server
+  // 🔹 Load data from JSON-server
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -37,7 +37,7 @@ const AdminAppointments = () => {
     fetchAppointments();
   }, []);
 
-  // 🔹 Filter khi thay đổi status/lawyer
+  // 🔹 Filter when status/lawyer changes
   useEffect(() => {
     let result = appointments;
 
@@ -55,7 +55,7 @@ const AdminAppointments = () => {
   }, [statusFilter, lawyerFilter, appointments]);
 
   const handleDelete = async (id) => {
-    if (window.confirm("Xóa lịch hẹn này?")) {
+    if (window.confirm("Delete this appointment?")) {
       try {
         await fetch(`http://localhost:3001/appointments/${id}`, { method: "DELETE" });
         const updated = appointments.filter((a) => a.id !== id);
@@ -89,7 +89,7 @@ const AdminAppointments = () => {
   return (
     <div className="container my-5">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold text-primary">Admin – Quản lý lịch hẹn</h4>
+        <h4 className="fw-bold text-primary">Admin – Manage Appointments</h4>
         <button
           className="btn btn-outline-secondary"
           onClick={() => {
@@ -98,20 +98,20 @@ const AdminAppointments = () => {
             setFiltered(appointments);
           }}
         >
-          <i className="bi bi-arrow-counterclockwise me-2"></i> Reset lọc
+          <i className="bi bi-arrow-counterclockwise me-2"></i> Reset
         </button>
       </div>
 
       {/* Filter */}
       <div className="row mb-4">
         <div className="col-md-6 mb-2">
-          <label className="form-label fw-semibold">Lọc theo trạng thái:</label>
+          <label className="form-label fw-semibold">Filter by Status:</label>
           <select
             className="form-select"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="all">Tất cả</option>
+            <option value="all">All</option>
             <option value="pending">Pending</option>
             <option value="success">Success</option>
             <option value="failed">Failed</option>
@@ -120,13 +120,13 @@ const AdminAppointments = () => {
         </div>
 
         <div className="col-md-6 mb-2">
-          <label className="form-label fw-semibold">Lọc theo luật sư:</label>
+          <label className="form-label fw-semibold">Filter by Lawyer:</label>
           <select
             className="form-select"
             value={lawyerFilter}
             onChange={(e) => setLawyerFilter(e.target.value)}
           >
-            <option value="all">Tất cả</option>
+            <option value="all">All</option>
             {lawyerList.map((lawyer, idx) => (
               <option key={idx} value={lawyer}>
                 {lawyer}
@@ -145,11 +145,11 @@ const AdminAppointments = () => {
         onView={(a) => setSelectedAppointment(a)}
       />
 
-      {/* Modal chi tiết */}
+      {/* Modal: Appointment Details */}
       {selectedAppointment && (
         <Modal show={true} onHide={() => setSelectedAppointment(null)} centered>
           <Modal.Header closeButton>
-            <Modal.Title>Chi tiết cuộc hẹn</Modal.Title>
+            <Modal.Title>Appointment Details</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <p><strong>Lawyer:</strong> {selectedAppointment.lawyer_name}</p>
@@ -158,10 +158,12 @@ const AdminAppointments = () => {
             <p><strong>Duration:</strong> {selectedAppointment.slot_duration} min</p>
             <p><strong>Total:</strong> ${selectedAppointment.total_price.toFixed(2)}</p>
             <p><strong>Status:</strong> {selectedAppointment.status}</p>
-            <p><strong>Notes:</strong> {selectedAppointment.notes}</p>
+            <p><strong>Notes:</strong> {selectedAppointment.notes || "-"}</p>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setSelectedAppointment(null)}>Close</Button>
+            <Button variant="secondary" onClick={() => setSelectedAppointment(null)}>
+              Close
+            </Button>
           </Modal.Footer>
         </Modal>
       )}

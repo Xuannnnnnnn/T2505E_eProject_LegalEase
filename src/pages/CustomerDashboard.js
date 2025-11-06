@@ -139,35 +139,6 @@ const CustomerDashboard = () => {
         {/* 🔹 Tab Appointments */}
         {activeTab === "appointments" && (
           <div>
-            <h5>Book a New Appointment</h5>
-
-            {/* Select Lawyer */}
-            <div className="mb-3">
-              <label className="form-label">Select Lawyer</label>
-              <select
-                className="form-select"
-                value={selectedLawyer ? selectedLawyer.id : ""}
-                onChange={(e) => {
-                  const id = parseInt(e.target.value);
-                  const lawyer = lawyers.find((l) => l.id === id);
-                  setSelectedLawyer(lawyer);
-                }}
-              >
-                <option value="">-- Choose a Lawyer --</option>
-                {lawyers.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name} - ${l.hourly_rate}/h
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Appointment Form */}
-            <AppointmentForm
-              lawyer={selectedLawyer}
-              customer={loggedCustomer}
-              onNewAppointment={handleNewAppointment}
-            />
 
             {/* Search */}
             <div className="mt-5 border rounded p-3 bg-light">

@@ -4,6 +4,7 @@ import SidebarLawyer from "../components/SidebarLawyer";
 import LawyerScheduleManager from "../components/LawyerScheduleManager";
 import AppointmentsTable from "../components/AppointmentsTable";
 
+
 const API_BASE = "http://localhost:3001";
 
 const LawyerDashboard = () => {
@@ -14,6 +15,10 @@ const LawyerDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [viewingAppointment, setViewingAppointment] = useState(null); // ✅ State cho modal View
+  const [customerFilter, setCustomerFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   // Kiểm tra login luật sư
   useEffect(() => {
@@ -316,40 +321,9 @@ const LawyerDashboard = () => {
       />
 
       <div className="flex-grow-1 p-4 overflow-auto">
-        <h3 className="mb-4 text-primary">Lawyer Dashboard</h3>
-
-        {/* Tabs */}
-        <div className="mb-3">
-          <button
-            className={`btn me-2 ${
-              activeTab === "schedule" ? "btn-primary" : "btn-outline-primary"
-            }`}
-            onClick={() => setActiveTab("schedule")}
-          >
-            Manage Schedule
-          </button>
-          <button
-            className={`btn me-2 ${
-              activeTab === "appointments" ? "btn-primary" : "btn-outline-primary"
-            }`}
-            onClick={() => setActiveTab("appointments")}
-          >
-            Appointments
-          </button>
-          <button
-            className={`btn ${
-              activeTab === "profile" ? "btn-primary" : "btn-outline-primary"
-            }`}
-            onClick={() => setActiveTab("profile")}
-          >
-            My Profile
-          </button>
-        </div>
-
         {/* Schedule Tab */}
         {activeTab === "schedule" && (
           <div>
-            <h5>Configure your available slots</h5>
             <LawyerScheduleManager
               lawyerId={loggedLawyer.id || loggedLawyer.lawyer_id}
             />
@@ -359,27 +333,117 @@ const LawyerDashboard = () => {
         {/* Appointments Tab */}
         {activeTab === "appointments" && (
           <div>
-            <h5>Customer Appointments</h5>
+            <h5 className="mb-3 text-primary fw-bold">Manage Appointments</h5>
+
+            {/* Filter section */}
+            <div className="mb-3 d-flex flex-wrap gap-2 align-items-end">
+              <input
+                type="text"
+                placeholder="Search by customer name"
+                className="form-control"
+                style={{ width: "200px" }}
+                value={customerFilter}
+                onChange={(e) => setCustomerFilter(e.target.value)}
+              />
+
+              <div>
+                <label>From: </label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label>To: </label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </div>
+
+              <select
+                className="form-select"
+                style={{ width: "150px" }}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setCustomerFilter("");
+                  setFromDate("");
+                  setToDate("");
+                  setStatusFilter("");
+                }}
+              >
+                Clear
+              </button>
+            </div>
+
             {loadingAppointments ? (
               <div>Loading appointments...</div>
             ) : (
               <>
-                <AppointmentsTable
-                  appointments={appointments}
-                  role="lawyer"
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                  onView={(a) => setViewingAppointment(a)}
-                />
+                {/* Filter appointments */}
+                {(() => {
+                  let filtered = [...appointments];
 
-                {/* Modal hiển thị chi tiết khi View */}
+                  if (customerFilter) {
+                    filtered = filtered.filter((a) =>
+                      (a.customer_name || "")
+                        .toLowerCase()
+                        .includes(customerFilter.toLowerCase())
+                    );
+                  }
+
+                  if (fromDate) {
+                    filtered = filtered.filter(
+                      (a) =>
+                        new Date(a.appointment_date) >= new Date(fromDate)
+                    );
+                  }
+
+                  if (toDate) {
+                    filtered = filtered.filter(
+                      (a) =>
+                        new Date(a.appointment_date) <= new Date(toDate)
+                    );
+                  }
+
+                  if (statusFilter) {
+                    filtered = filtered.filter(
+                      (a) =>
+                        (a.status || "").toLowerCase() === statusFilter.toLowerCase()
+                    );
+                  }
+
+                  return (
+                    <AppointmentsTable
+                      appointments={filtered}
+                      role="lawyer"
+                      onApprove={handleApprove}
+                      onReject={handleReject}
+                      onView={(a) => setViewingAppointment(a)}
+                    />
+                  );
+                })()}
+
+                {/* Modal hiển thị chi tiết */}
                 {viewingAppointment && (
                   <div
                     className="modal fade show"
-                    style={{
-                      display: "block",
-                      backgroundColor: "rgba(0,0,0,0.5)",
-                    }}
+                    style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
                   >
                     <div className="modal-dialog modal-dialog-centered">
                       <div className="modal-content border-0 rounded-4">
@@ -392,24 +456,23 @@ const LawyerDashboard = () => {
                         </div>
                         <div className="modal-body">
                           <p>
-                            <strong>Customer:</strong>{" "}
-                            {viewingAppointment.customer_name}
+                            <strong>Customer:</strong> {viewingAppointment.customer_name || "-"}
                           </p>
                           <p>
                             <strong>Date & Time:</strong>{" "}
-                            {viewingAppointment.appointment_date}{" "}
-                            {viewingAppointment.appointment_time}
+                            {viewingAppointment.appointment_date || "-"}{" "}
+                            {viewingAppointment.appointment_time || "-"}
                           </p>
                           <p>
                             <strong>Duration:</strong>{" "}
-                            {viewingAppointment.slot_duration} min
+                            {viewingAppointment.slot_duration || "-"} min
                           </p>
                           <p>
                             <strong>Total Price:</strong> $
-                            {viewingAppointment.total_price?.toFixed(2)}
+                            {(viewingAppointment.total_price || 0).toFixed(2)}
                           </p>
                           <p>
-                            <strong>Status:</strong> {viewingAppointment.status}
+                            <strong>Status:</strong> {viewingAppointment.status || "-"}
                           </p>
                           <p>
                             <strong>Notes:</strong> {viewingAppointment.notes || "-"}
@@ -431,7 +494,6 @@ const LawyerDashboard = () => {
             )}
           </div>
         )}
-
         {/* Profile Tab */}
         {activeTab === "profile" && (
           <div>

@@ -9,7 +9,13 @@ function ManageLawyers() {
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // 🟢 Fetch list of lawyers
+  // Filter states
+  const [nameFilter, setNameFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [specializationFilter, setSpecializationFilter] = useState("");
+
+  // Fetch list of lawyers
   useEffect(() => {
     fetch(`${BASE_URL}/lawyers`)
       .then((res) => res.json())
@@ -17,7 +23,7 @@ function ManageLawyers() {
       .catch((err) => console.error("Error loading lawyers:", err));
   }, []);
 
-  // 🟢 Approve / Reject lawyer
+  // Approve / Reject lawyer
   const updateStatus = async (id, status) => {
     const lawyer = lawyers.find((l) => l.lawyer_id === id);
     if (!lawyer) return;
@@ -46,13 +52,13 @@ function ManageLawyers() {
     }
   };
 
-  // 🟢 View details in modal
+  // View details in modal
   const handleView = (lawyer) => {
     setSelectedLawyer(lawyer);
     setShowModal(true);
   };
 
-  // 🟢 Download base64 file
+  // Download base64 file
   const handleDownload = (fileData) => {
     if (!fileData?.data) return alert("No file data available!");
 
@@ -62,12 +68,70 @@ function ManageLawyers() {
     link.click();
   };
 
+  // Filter lawyers based on search criteria
+  const filteredLawyers = lawyers.filter((l) => {
+    const matchesName = (l.name || "").toLowerCase().includes(nameFilter.toLowerCase());
+    const matchesSpecialization = specializationFilter
+      ? (l.specialization || "").toLowerCase() === specializationFilter.toLowerCase()
+      : true;
+    const matchesFromDate = fromDate ? new Date(l.register_date) >= new Date(fromDate) : true;
+    const matchesToDate = toDate ? new Date(l.register_date) <= new Date(toDate) : true;
+
+    return matchesName && matchesSpecialization && matchesFromDate && matchesToDate;
+  });
+
   return (
     <>
       <Header />
       <Container style={{ minHeight: "80vh", padding: "2rem 0" }}>
         <h3 className="text-center mb-4 fw-bold text-info">Manage Lawyers</h3>
 
+        {/* Filter section */}
+        <div className="mb-3 d-flex flex-wrap gap-2 align-items-end">
+          <input
+            type="text"
+            placeholder="Search by name"
+            className="form-control"
+            style={{ width: "200px" }}
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+          />
+          <input
+            type="date"
+            className="form-control"
+            style={{ width: "150px" }}
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
+          <input
+            type="date"
+            className="form-control"
+            style={{ width: "150px" }}
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Specialization"
+            className="form-control"
+            style={{ width: "200px" }}
+            value={specializationFilter}
+            onChange={(e) => setSpecializationFilter(e.target.value)}
+          />
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setNameFilter("");
+              setFromDate("");
+              setToDate("");
+              setSpecializationFilter("");
+            }}
+          >
+            Clear
+          </Button>
+        </div>
+
+        {/* Lawyers Table */}
         <Table striped bordered hover responsive>
           <thead className="table-info text-center">
             <tr>
@@ -80,8 +144,8 @@ function ManageLawyers() {
             </tr>
           </thead>
           <tbody className="text-center align-middle">
-            {lawyers.length > 0 ? (
-              lawyers.map((l) => (
+            {filteredLawyers.length > 0 ? (
+              filteredLawyers.map((l) => (
                 <tr key={l.lawyer_id}>
                   <td>{l.lawyer_id}</td>
                   <td>{l.name}</td>
@@ -142,7 +206,7 @@ function ManageLawyers() {
         </Table>
       </Container>
 
-      {/* 🧩 Modal: View Lawyer Detail */}
+      {/* Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
         <Modal.Header closeButton>
           <Modal.Title>Lawyer Details</Modal.Title>
