@@ -1,16 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { useNavigate } from "react-router-dom"; // 👈 thêm dòng này
+import { useNavigate } from "react-router-dom";
 import specializations from "../data/specializations.json";
-import cities from "../data/cities.json";
 
 const LegalEaseSection = () => {
   const [activeTab, setActiveTab] = useState("issue");
   const [visibleIssues, setVisibleIssues] = useState(15);
   const [visibleCities, setVisibleCities] = useState(15);
-  const navigate = useNavigate(); // 👈 để điều hướng khi click
 
-  // Chia mảng thành từng nhóm
+  const [cities, setCities] = useState([]);   // 👈 lấy từ db.json
+  const navigate = useNavigate();
+
+  // 🟦 LẤY CITY TỪ db.json (json-server hoặc API bạn đang dùng)
+  useEffect(() => {
+    fetch("http://localhost:3001/cities")
+      .then((res) => res.json())
+      .then((data) => setCities(data))
+      .catch((err) => console.log("Error loading cities:", err));
+  }, []);
+
+  // Chia mảng thành cột
   const chunkArray = (arr, size) => {
     const chunks = [];
     for (let i = 0; i < arr.length; i += size) {
@@ -25,67 +34,25 @@ const LegalEaseSection = () => {
   const issueColumns = chunkArray(visibleIssueItems, 5);
   const cityColumns = chunkArray(visibleCityItems, 5);
 
-  // 👇 Khi click vào category
+  // Khi click issue
   const handleCategoryClick = (categoryName) => {
-    const query = new URLSearchParams({ category: categoryName }).toString();
-    navigate(`/search?${query}`);
+    navigate(`/search?category=${encodeURIComponent(categoryName)}`);
   };
 
-  // 👇 Khi click vào city
+  // Khi click city
   const handleCityClick = (cityName) => {
-    const query = new URLSearchParams({ city: cityName }).toString();
-    navigate(`/search?${query}`);
+    navigate(`/search?city=${encodeURIComponent(cityName)}`);
   };
 
   return (
     <div className="container text-center py-5" style={{ maxWidth: "1100px" }}>
-      {/* --- Tiêu đề --- */}
       <h2 className="fw-semibold mb-5 fs-2 text-dark">
         LegalEase Helps You Find the Right Lawyer!
       </h2>
 
-      {/* --- Giới thiệu --- */}
-      <div className="row justify-content-center text-start mb-5">
-        <div className="col-md-7">
-          <h3 className="fw-semibold fs-4 mb-3">
-            Present Your Case to Local Lawyers in Minutes
-          </h3>
-          <p>
-            Our legal service matches you with highly rated, licensed lawyers near you — for free.
-            Over seven million people and businesses have posted cases on LegalEase.{" "}
-            <a href="#" className="text-primary text-decoration-underline">
-              Present your case now!
-            </a>
-          </p>
-        </div>
-        <div className="col-md-5">
-          <h3 className="fw-semibold fs-4 mb-3">Are You a Lawyer?</h3>
-          <p>
-            Generate consistent clients with our{" "}
-            <a href="#" className="text-primary text-decoration-underline">
-              legal marketing service.
-            </a>
-          </p>
-        </div>
-      </div>
-
-      {/* --- Mở rộng sang Việt Nam --- */}
-      <div className="mb-5">
-        <h3 className="fw-semibold fs-3 mb-3">
-          LegalEase Expands Services to Vietnam Clients and Lawyers
-        </h3>
-        <p>
-          For clients from Vietnam, you can now{" "}
-          <a href="#" className="text-primary text-decoration-underline">
-            post your cases
-          </a>{" "}
-          at LegalEase and get matched to lawyers in your area.
-        </p>
-      </div>
-
-      {/* --- Tabs --- */}
+      {/* ---------- Tabs ---------- */}
       <ul className="nav nav-tabs justify-content-center mb-4" role="tablist">
-        <li className="fs-3 nav-item" role="presentation">
+        <li className="fs-3 nav-item">
           <button
             className={`nav-link ${activeTab === "issue" ? "active fw-semibold" : ""}`}
             onClick={() => setActiveTab("issue")}
@@ -93,7 +60,7 @@ const LegalEaseSection = () => {
             Find a Lawyer by Issue
           </button>
         </li>
-        <li className="fs-3 nav-item" role="presentation">
+        <li className="fs-3 nav-item">
           <button
             className={`nav-link ${activeTab === "city" ? "active fw-semibold" : ""}`}
             onClick={() => setActiveTab("city")}
@@ -103,11 +70,11 @@ const LegalEaseSection = () => {
         </li>
       </ul>
 
-      {/* --- Tab content --- */}
       <div className="tab-content text-start mx-auto" style={{ maxWidth: "900px" }}>
-        {/* Tab 1: By Issue */}
+
+        {/* ---- TAB ISSUE ---- */}
         {activeTab === "issue" && (
-          <div className="tab-pane fade show active">
+          <div>
             <div className="row justify-content-center">
               {issueColumns.map((col, i) => (
                 <div className="col-12 col-sm-6 col-md-4" key={i}>
@@ -117,7 +84,6 @@ const LegalEaseSection = () => {
                         <button
                           onClick={() => handleCategoryClick(item.name)}
                           className="btn btn-link text-primary text-decoration-none fs-5 p-0"
-                          style={{ cursor: "pointer" }}
                         >
                           {item.name}
                         </button>
@@ -132,7 +98,7 @@ const LegalEaseSection = () => {
             <div className="mt-3 text-center">
               {visibleIssues < specializations.length ? (
                 <button
-                  className="btn btn-link text-primary d-inline-flex align-items-center justify-content-center"
+                  className="btn btn-link text-primary d-inline-flex align-items-center"
                   onClick={() => setVisibleIssues((prev) => prev + 15)}
                 >
                   <FaChevronDown className="me-2" />
@@ -140,7 +106,7 @@ const LegalEaseSection = () => {
                 </button>
               ) : (
                 <button
-                  className="btn btn-link text-primary d-inline-flex align-items-center justify-content-center"
+                  className="btn btn-link text-primary d-inline-flex align-items-center"
                   onClick={() => setVisibleIssues(15)}
                 >
                   <FaChevronUp className="me-2" />
@@ -151,9 +117,9 @@ const LegalEaseSection = () => {
           </div>
         )}
 
-        {/* Tab 2: By City */}
+        {/* ---- TAB CITY ---- */}
         {activeTab === "city" && (
-          <div className="tab-pane fade show active">
+          <div>
             <div className="row justify-content-center">
               {cityColumns.map((col, i) => (
                 <div className="col-12 col-sm-6 col-md-4" key={i}>
@@ -163,7 +129,6 @@ const LegalEaseSection = () => {
                         <button
                           onClick={() => handleCityClick(city.name)}
                           className="btn btn-link text-primary text-decoration-none fs-5 p-0"
-                          style={{ cursor: "pointer" }}
                         >
                           {city.name}
                         </button>
@@ -178,7 +143,7 @@ const LegalEaseSection = () => {
             <div className="mt-3 text-center">
               {visibleCities < cities.length ? (
                 <button
-                  className="btn btn-link text-primary d-inline-flex align-items-center justify-content-center"
+                  className="btn btn-link text-primary d-inline-flex align-items-center"
                   onClick={() => setVisibleCities((prev) => prev + 15)}
                 >
                   <FaChevronDown className="me-2" />
@@ -186,7 +151,7 @@ const LegalEaseSection = () => {
                 </button>
               ) : (
                 <button
-                  className="btn btn-link text-primary d-inline-flex align-items-center justify-content-center"
+                  className="btn btn-link text-primary d-inline-flex align-items-center"
                   onClick={() => setVisibleCities(15)}
                 >
                   <FaChevronUp className="me-2" />
@@ -196,6 +161,7 @@ const LegalEaseSection = () => {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

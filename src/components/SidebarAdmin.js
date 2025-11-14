@@ -13,7 +13,6 @@ const SidebarAdmin = ({ activeTab, setActiveTab, onLogout }) => {
     { id: "appointments", icon: <FaCalendarAlt />, label: "Manage Appointments" },
     { id: "fees", icon: <FaFileInvoiceDollar />, label: "Manage Fees" },
     { id: "content", icon: <FaNewspaper />, label: "Manage Content" },
-    { id: "reports", icon: <FaChartBar />, label: "View Reports" },
   ];
 
   return (

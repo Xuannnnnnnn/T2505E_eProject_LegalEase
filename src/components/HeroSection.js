@@ -1,27 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import categoriesData from "../data/categories.json";
+import specializationsData from "../data/specializations.json";
 import "../App.css";
 
 const HeroSection = () => {
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [specializations, setSpecializations] = useState([]);
+  const [selectedSpecialization, setSelectedSpecialization] = useState("");
   const [location, setLocation] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    setCategories(categoriesData);
+    setSpecializations(specializationsData);
   }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Nếu không nhập gì thì bỏ qua
-    if (!selectedCategory && !location) return;
+    if (!selectedSpecialization && !location) return;
 
-    // Điều hướng kèm query params
+    // Gửi query param thống nhất là "specialization" + "city"
     navigate(
-      `/search?category=${encodeURIComponent(selectedCategory)}&city=${encodeURIComponent(location)}`
+      `/search?specialization=${encodeURIComponent(selectedSpecialization)}&city=${encodeURIComponent(location)}`
     );
   };
 
@@ -49,13 +48,13 @@ const HeroSection = () => {
 
         <form className="hero-form" onSubmit={handleSubmit}>
           <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            value={selectedSpecialization}
+            onChange={(e) => setSelectedSpecialization(e.target.value)}
           >
             <option value="">Choose a Category</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.name}>
-                {cat.name}
+            {specializations.map((spec) => (
+              <option key={spec.specialization_id} value={spec.name}>
+                {spec.name}
               </option>
             ))}
           </select>
@@ -66,6 +65,7 @@ const HeroSection = () => {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
+
           <button type="submit" className="hero-btn">
             Search for Attorneys →
           </button>

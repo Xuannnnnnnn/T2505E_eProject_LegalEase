@@ -1,49 +1,98 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import lawyers from "../data/lawyers.json";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
-function SearchLawyerPage() {
+const SearchLawyerPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [lawyers, setLawyers] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+
+  // Lấy query params
+  const query = new URLSearchParams(location.search);
+  const specialization = query.get("specialization") || "";
+  const city = query.get("city") || "";
+
+  // Tải dữ liệu luật sư từ db.json
+  useEffect(() => {
+    fetch("http://localhost:3001/lawyers")
+      .then((res) => res.json())
+      .then((data) => setLawyers(data))
+      .catch((err) => console.log("Error loading:", err));
+  }, []);
+
+  // Lọc lawyers theo specialization + city
+  useEffect(() => {
+    let result = lawyers;
+
+    if (specialization) {
+      result = result.filter(
+        (lawyer) =>
+          lawyer.specialization &&
+          lawyer.specialization.toLowerCase() === specialization.toLowerCase()
+      );
+    }
+
+    if (city) {
+      result = result.filter(
+        (lawyer) =>
+          lawyer.city &&
+          lawyer.city.toLowerCase() === city.toLowerCase()
+      );
+    }
+
+    setFiltered(result);
+  }, [specialization, city, lawyers]);
+
   return (
     <>
-    <Header/>
-      <div className="container my-5">
-        <h3 className="text-center mb-4 text-primary fw-bold">
-          🔍 Featured Lawyers
-        </h3>
+      <Header />
 
-        <div className="row g-4">
-          {lawyers.map((lawyer) => (
-            <div className="col-md-4" key={lawyer.lawyer_id}>
-              <div className="card shadow-sm border-0 rounded-4">
-                <img
-                  src={`/${lawyer.image}`}
-                  alt={lawyer.name}
-                  className="card-img-top"
-                  style={{ height: "250px", objectFit: "cover" }}
-                />
-                <div className="card-body">
-                  <h5 className="card-title text-primary fw-bold">{lawyer.name}</h5>
-                  <p className="card-text text-muted mb-1">{lawyer.city}</p>
-                  <p className="text-success fw-semibold">
-                    ${lawyer.hourly_rate}/hour
-                  </p>
-                  <Link
-                    to={`/lawyer/${lawyer.lawyer_id}`}
-                    className="btn btn-outline-primary w-100"
+      <div className="container py-4" style={{ minHeight: "70vh" }}>
+        <h2 className="mb-3">Search Results</h2>
+
+        {/* Hiển thị điều kiện lọc */}
+        <p className="text-secondary">
+          {specialization && <span>Category: <b>{specialization}</b> </span>}
+          {city && <span> | City: <b>{city}</b></span>}
+        </p>
+
+        <hr />
+
+        {/* Nếu không có kết quả */}
+        {filtered.length === 0 ? (
+          <p className="text-danger">No lawyers found.</p>
+        ) : (
+          <div className="row">
+            {filtered.map((lawyer) => (
+              <div className="col-md-4 mb-4" key={lawyer.id}>
+                <div className="card shadow-sm p-3">
+                  <img
+                    src={lawyer.image}
+                    alt={lawyer.name}
+                    className="card-img-top rounded"
+                  />
+                  <h5 className="mt-3">{lawyer.name}</h5>
+                  <p className="mb-1">{lawyer.specialization}</p>
+                  <p className="text-muted">{lawyer.city}</p>
+                  <p>⭐ {lawyer.rating}</p>
+                  <button
+                    className="btn btn-primary mt-2"
+                    onClick={() => navigate(`/lawyer/${lawyer.id}`)}
                   >
-                    View Full Profile
-                  </Link>
+                    View Profile & Book
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
-      <Footer/>
+
+      <Footer />
     </>
   );
-}
+};
 
 export default SearchLawyerPage;
