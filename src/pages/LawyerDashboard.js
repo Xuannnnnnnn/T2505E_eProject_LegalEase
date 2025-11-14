@@ -3,9 +3,43 @@ import { useNavigate } from "react-router-dom";
 import SidebarLawyer from "../components/SidebarLawyer";
 import LawyerScheduleManager from "../components/LawyerScheduleManager";
 import AppointmentsTable from "../components/AppointmentsTable";
-
+import { Button, Pagination } from "react-bootstrap";
+import LawyerProfilePage from "../pages/LawyerProfilePage";
+import { FaUserTie, FaCalendarAlt, FaStickyNote } from "react-icons/fa";
+import LawyerAppointmentsReport from "../pages/LawyerAppointmentsReport";
 
 const API_BASE = "http://localhost:3001";
+
+// Hàm tiện ích: Lấy tuần hiện tại
+const getCurrentWeekRange = () => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayOfWeek = today.getDay();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek);
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  const format = (date) => date.toISOString().split("T")[0];
+  return { start: format(startOfWeek), end: format(endOfWeek) };
+};
+
+// Hàm tiện ích: Sắp xếp appointments
+const sortLawyerAppointments = (appts) => {
+  const statusOrder = { pending: 1, approved: 2, completed: 3, rejected: 4 };
+  return [...appts].sort((a, b) => {
+    const orderA = statusOrder[a.status?.toLowerCase()] || 5;
+    const orderB = statusOrder[b.status?.toLowerCase()] || 5;
+    if (orderA !== orderB) return orderA - orderB;
+
+    const dateA = new Date(
+      (a.appointment_date || "1970-01-01") + " " + (a.appointment_time || "00:00")
+    );
+    const dateB = new Date(
+      (b.appointment_date || "1970-01-01") + " " + (b.appointment_time || "00:00")
+    );
+    return dateB.getTime() - dateA.getTime();
+  });
+};
 
 const LawyerDashboard = () => {
   const navigate = useNavigate();
@@ -14,13 +48,20 @@ const LawyerDashboard = () => {
   const [activeTab, setActiveTab] = useState("schedule");
   const [appointments, setAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
-  const [viewingAppointment, setViewingAppointment] = useState(null); // ✅ State cho modal View
+  const [viewingAppointment, setViewingAppointment] = useState(null);
+  const [customerInfo, setCustomerInfo] = useState(null); // info khách hàng
+
+  // Filters
   const [customerFilter, setCustomerFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  // Kiểm tra login luật sư
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Kiểm tra login
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("loggedInUser"));
     const role = localStorage.getItem("userRole");
@@ -32,17 +73,23 @@ const LawyerDashboard = () => {
     setLoggedLawyer(storedUser);
   }, [navigate]);
 
-  // Load appointments khi vào tab Appointments
+  // Load appointments
   useEffect(() => {
     if (!loggedLawyer || activeTab !== "appointments") return;
 
     setLoadingAppointments(true);
-    fetch(
-      `${API_BASE}/appointments?lawyer_id=${loggedLawyer.lawyer_id || loggedLawyer.id}`
-    )
+    const lawyerId = loggedLawyer.id || loggedLawyer.lawyer_id;
+
+    fetch(`${API_BASE}/appointments?lawyer_id=${lawyerId}`)
       .then((res) => res.json())
       .then((data) => {
-        setAppointments(data);
+        const sortedData = sortLawyerAppointments(data);
+        setAppointments(sortedData);
+
+        const weekRange = getCurrentWeekRange();
+        setFromDate(weekRange.start);
+        setToDate(weekRange.end);
+
         setLoadingAppointments(false);
       })
       .catch((err) => {
@@ -51,20 +98,29 @@ const LawyerDashboard = () => {
       });
   }, [loggedLawyer, activeTab]);
 
-  // Update trạng thái appointment
-  const updateAppointmentStatus = async (a, status) => {
+  // Cập nhật trạng thái appointment
+  const updateAppointmentStatus = async (appointment, newStatus) => {
     try {
-      const res = await fetch(`${API_BASE}/appointments/${a.id}`, {
+      const res = await fetch(`${API_BASE}/appointments/${appointment.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error("Failed to update status");
 
       const updated = await res.json();
+
       setAppointments((prev) =>
-        prev.map((item) => (item.id === updated.id ? updated : item))
+        sortLawyerAppointments(
+          prev.map((item) => (item.id === updated.id ? updated : item))
+        )
       );
+
+      if (viewingAppointment && viewingAppointment.id === updated.id) {
+        setViewingAppointment(updated);
+      }
+
+      alert(`✅ Appointment status updated to ${newStatus.toUpperCase()}!`);
     } catch (err) {
       console.error(err);
       alert("Failed to update appointment status");
@@ -73,244 +129,79 @@ const LawyerDashboard = () => {
 
   const handleApprove = (a) => updateAppointmentStatus(a, "approved");
   const handleReject = (a) => updateAppointmentStatus(a, "rejected");
+  const handleComplete = (a) => updateAppointmentStatus(a, "completed");
 
-  // Logout
+  // Xem chi tiết appointment và fetch info khách
+  const handleView = async (appointment) => {
+    setViewingAppointment(appointment);
+
+    if (appointment.customer_id) {
+      try {
+        const res = await fetch(`${API_BASE}/customers/${appointment.customer_id}`);
+        const data = await res.json();
+        setCustomerInfo(data);
+      } catch (err) {
+        console.error(err);
+        setCustomerInfo(null);
+      }
+    } else {
+      setCustomerInfo(null);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("userRole");
     navigate("/login");
   };
 
+  // Lọc appointments
+  const getFilteredAppointments = () => {
+    let filtered = [...appointments];
+
+    if (customerFilter) {
+      filtered = filtered.filter((a) =>
+        (a.customer_name || "").toLowerCase().includes(customerFilter.toLowerCase())
+      );
+    }
+    if (fromDate) {
+      filtered = filtered.filter(
+        (a) => new Date(a.appointment_date) >= new Date(fromDate)
+      );
+    }
+    if (toDate) {
+      filtered = filtered.filter(
+        (a) => new Date(a.appointment_date) <= new Date(toDate)
+      );
+    }
+    if (statusFilter) {
+      filtered = filtered.filter(
+        (a) => (a.status || "").toLowerCase() === statusFilter.toLowerCase()
+      );
+    }
+    return filtered;
+  };
+
+  const filteredAppointments = getFilteredAppointments();
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentAppointmentsOnPage = filteredAppointments.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
+
   if (!loggedLawyer) {
     return (
       <div className="text-center mt-5 text-secondary">
-        Loading dashboard...
+        Loading dashboard... (Checking authentication)
       </div>
     );
   }
-
-  // Component Profile View/Edit
-  const ProfileSection = ({ lawyer, onSave }) => {
-    const [editMode, setEditMode] = useState(false);
-    const [formData, setFormData] = useState({ ...lawyer });
-    const [saving, setSaving] = useState(false);
-
-    const handleChange = (e) => {
-      const { name, value, type, checked } = e.target;
-      setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
-    };
-
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      setSaving(true);
-      try {
-        const res = await fetch(`${API_BASE}/lawyers/${lawyer.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-        if (!res.ok) throw new Error("Failed to save profile");
-
-        const updated = await res.json();
-        onSave(updated);
-        setSaving(false);
-        setEditMode(false);
-        alert("Profile updated successfully!");
-      } catch (err) {
-        console.error(err);
-        setSaving(false);
-        alert("Failed to update profile");
-      }
-    };
-
-    if (!editMode) {
-      return (
-        <div>
-          <div className="d-flex align-items-center mb-3">
-            <img
-              src={lawyer.image}
-              alt="Lawyer"
-              className="rounded-circle me-3"
-              width={100}
-              height={100}
-            />
-            <div>
-              <h5>{lawyer.name}</h5>
-              <p className="mb-1"><strong>Email:</strong> {lawyer.email}</p>
-              <p className="mb-1"><strong>Phone:</strong> {lawyer.phone}</p>
-              <p className="mb-1"><strong>Address:</strong> {lawyer.address}</p>
-            </div>
-          </div>
-
-          <p><strong>DOB:</strong> {lawyer.dob}</p>
-          <p><strong>Gender:</strong> {lawyer.gender}</p>
-          <p><strong>City:</strong> {lawyer.city}</p>
-          <p><strong>Experience (years):</strong> {lawyer.experience_years}</p>
-          <p><strong>Profile Summary:</strong> {lawyer.profile_summary}</p>
-          <p><strong>Degree File:</strong> {lawyer.degree_file}</p>
-          <p><strong>License File:</strong> {lawyer.license_file}</p>
-          <p><strong>Certificates:</strong> {lawyer.certificates}</p>
-          <p><strong>Verified:</strong> {lawyer.verify_status ? "Yes" : "No"}</p>
-
-          <button className="btn btn-primary mt-3" onClick={() => setEditMode(true)}>
-            Edit Profile
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <form onSubmit={handleSubmit}>
-        <div className="row">
-          <div className="col-md-6 mb-3">
-            <label>Name</label>
-            <input
-              name="name"
-              value={formData.name || ""}
-              onChange={handleChange}
-              className="form-control"
-              required
-            />
-          </div>
-          <div className="col-md-6 mb-3">
-            <label>Password</label>
-            <input
-              type="text"
-              name="password_hash"
-              value={formData.password_hash || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="col-md-6 mb-3">
-            <label>Date of Birth</label>
-            <input
-              type="date"
-              name="dob"
-              value={formData.dob || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="col-md-6 mb-3">
-            <label>Gender</label>
-            <select
-              name="gender"
-              value={formData.gender || ""}
-              onChange={handleChange}
-              className="form-select"
-            >
-              <option>Male</option>
-              <option>Female</option>
-            </select>
-          </div>
-          <div className="col-md-6 mb-3">
-            <label>Phone</label>
-            <input
-              name="phone"
-              value={formData.phone || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="col-md-6 mb-3">
-            <label>Address</label>
-            <input
-              name="address"
-              value={formData.address || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="col-md-6 mb-3">
-            <label>City</label>
-            <input
-              name="city"
-              value={formData.city || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="col-md-6 mb-3">
-            <label>Experience Years</label>
-            <input
-              type="number"
-              name="experience_years"
-              value={formData.experience_years || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="mb-3">
-            <label>Profile Summary</label>
-            <textarea
-              name="profile_summary"
-              value={formData.profile_summary || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="mb-3">
-            <label>Image URL</label>
-            <input
-              name="image"
-              value={formData.image || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="mb-3">
-            <label>Degree File</label>
-            <input
-              name="degree_file"
-              value={formData.degree_file || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="mb-3">
-            <label>License File</label>
-            <input
-              name="license_file"
-              value={formData.license_file || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="mb-3">
-            <label>Certificates</label>
-            <input
-              name="certificates"
-              value={formData.certificates || ""}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="form-check mb-3">
-            <input
-              type="checkbox"
-              name="verify_status"
-              checked={formData.verify_status || false}
-              onChange={handleChange}
-              className="form-check-input"
-            />
-            <label className="form-check-label">Verified</label>
-          </div>
-        </div>
-
-        <button type="submit" className="btn btn-success me-2" disabled={saving}>
-          {saving ? "Saving..." : "Save"}
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => setEditMode(false)}
-        >
-          Cancel
-        </button>
-      </form>
-    );
-  };
 
   return (
     <div className="d-flex vh-100">
@@ -321,13 +212,12 @@ const LawyerDashboard = () => {
       />
 
       <div className="flex-grow-1 p-4 overflow-auto">
+
         {/* Schedule Tab */}
         {activeTab === "schedule" && (
-          <div>
-            <LawyerScheduleManager
-              lawyerId={loggedLawyer.id || loggedLawyer.lawyer_id}
-            />
-          </div>
+          <LawyerScheduleManager
+            lawyerId={loggedLawyer.id || loggedLawyer.lawyer_id}
+          />
         )}
 
         {/* Appointments Tab */}
@@ -335,7 +225,7 @@ const LawyerDashboard = () => {
           <div>
             <h5 className="mb-3 text-primary fw-bold">Manage Appointments</h5>
 
-            {/* Filter section */}
+            {/* Filters */}
             <div className="mb-3 d-flex flex-wrap gap-2 align-items-end">
               <input
                 type="text"
@@ -345,7 +235,6 @@ const LawyerDashboard = () => {
                 value={customerFilter}
                 onChange={(e) => setCustomerFilter(e.target.value)}
               />
-
               <div>
                 <label>From: </label>
                 <input
@@ -355,7 +244,6 @@ const LawyerDashboard = () => {
                   onChange={(e) => setFromDate(e.target.value)}
                 />
               </div>
-
               <div>
                 <label>To: </label>
                 <input
@@ -365,7 +253,6 @@ const LawyerDashboard = () => {
                   onChange={(e) => setToDate(e.target.value)}
                 />
               </div>
-
               <select
                 className="form-select"
                 style={{ width: "150px" }}
@@ -376,14 +263,15 @@ const LawyerDashboard = () => {
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
+                <option value="completed">Completed</option>
               </select>
-
               <button
                 className="btn btn-secondary"
                 onClick={() => {
                   setCustomerFilter("");
-                  setFromDate("");
-                  setToDate("");
+                  const weekRange = getCurrentWeekRange();
+                  setFromDate(weekRange.start);
+                  setToDate(weekRange.end);
                   setStatusFilter("");
                 }}
               >
@@ -395,116 +283,172 @@ const LawyerDashboard = () => {
               <div>Loading appointments...</div>
             ) : (
               <>
-                {/* Filter appointments */}
-                {(() => {
-                  let filtered = [...appointments];
+                {/* Tổng tiền tất cả appointments đã lọc */}
+                <div className="mb-3">
+                  <h6>
+                    Total Revenue: <strong>
+                      ${filteredAppointments.reduce((sum, appt) => sum + (parseFloat(appt.total_price) || 0), 0).toFixed(2)}
+                    </strong>
+                  </h6>
+                </div>
 
-                  if (customerFilter) {
-                    filtered = filtered.filter((a) =>
-                      (a.customer_name || "")
-                        .toLowerCase()
-                        .includes(customerFilter.toLowerCase())
-                    );
-                  }
+                {/* Bảng appointments */}
+                <AppointmentsTable
+                  appointments={currentAppointmentsOnPage}
+                  role="lawyer"
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                  onComplete={handleComplete}
+                  onView={handleView}
+                />
 
-                  if (fromDate) {
-                    filtered = filtered.filter(
-                      (a) =>
-                        new Date(a.appointment_date) >= new Date(fromDate)
-                    );
-                  }
-
-                  if (toDate) {
-                    filtered = filtered.filter(
-                      (a) =>
-                        new Date(a.appointment_date) <= new Date(toDate)
-                    );
-                  }
-
-                  if (statusFilter) {
-                    filtered = filtered.filter(
-                      (a) =>
-                        (a.status || "").toLowerCase() === statusFilter.toLowerCase()
-                    );
-                  }
-
-                  return (
-                    <AppointmentsTable
-                      appointments={filtered}
-                      role="lawyer"
-                      onApprove={handleApprove}
-                      onReject={handleReject}
-                      onView={(a) => setViewingAppointment(a)}
+                {/* Pagination */}
+                <div className="d-flex justify-content-center mt-3">
+                  <Pagination>
+                    <Pagination.First
+                      onClick={() => handlePageChange(1)}
+                      disabled={currentPage === 1}
                     />
-                  );
-                })()}
+                    <Pagination.Prev
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    />
+                    {[...Array(totalPages).keys()].map((number) => (
+                      <Pagination.Item
+                        key={number + 1}
+                        active={number + 1 === currentPage}
+                        onClick={() => handlePageChange(number + 1)}
+                      >
+                        {number + 1}
+                      </Pagination.Item>
+                    ))}
+                    <Pagination.Next
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    />
+                    <Pagination.Last
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={currentPage === totalPages}
+                    />
+                  </Pagination>
+                </div>
+              </>
+            )}
 
-                {/* Modal hiển thị chi tiết */}
-                {viewingAppointment && (
-                  <div
-                    className="modal fade show"
-                    style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
-                  >
-                    <div className="modal-dialog modal-dialog-centered">
-                      <div className="modal-content border-0 rounded-4">
-                        <div className="modal-header bg-primary text-white">
-                          <h5>Appointment Details</h5>
-                          <button
-                            className="btn-close btn-close-white"
-                            onClick={() => setViewingAppointment(null)}
-                          ></button>
-                        </div>
-                        <div className="modal-body">
-                          <p>
-                            <strong>Customer:</strong> {viewingAppointment.customer_name || "-"}
-                          </p>
-                          <p>
-                            <strong>Date & Time:</strong>{" "}
-                            {viewingAppointment.appointment_date || "-"}{" "}
-                            {viewingAppointment.appointment_time || "-"}
-                          </p>
-                          <p>
-                            <strong>Duration:</strong>{" "}
-                            {viewingAppointment.slot_duration || "-"} min
-                          </p>
-                          <p>
-                            <strong>Total Price:</strong> $
-                            {(viewingAppointment.total_price || 0).toFixed(2)}
-                          </p>
-                          <p>
-                            <strong>Status:</strong> {viewingAppointment.status || "-"}
-                          </p>
-                          <p>
-                            <strong>Notes:</strong> {viewingAppointment.notes || "-"}
-                          </p>
-                        </div>
-                        <div className="modal-footer">
-                          <button
-                            className="btn btn-secondary"
-                            onClick={() => setViewingAppointment(null)}
-                          >
-                            Close
-                          </button>
-                        </div>
+
+            {/* Modal View Appointment */}
+            {viewingAppointment && (
+              <div
+                className="modal fade show"
+                style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+              >
+                <div className="modal-dialog modal-dialog-centered">
+                  <div className="modal-content border-0 rounded-4">
+                    <div className="modal-header bg-primary text-white">
+                      <h5>Appointment Details</h5>
+                      <button
+                        className="btn-close btn-close-white"
+                        onClick={() => setViewingAppointment(null)}
+                      ></button>
+                    </div>
+                    <div className="modal-body">
+                      {/* Customer Information */}
+                      <h5 className="mb-2 text-primary">
+                        <FaUserTie className="me-2" />
+                        Customer Information
+                      </h5>
+                      <div className="border rounded p-3 mb-4 bg-light">
+                        <p className="mb-1"><strong>Name:</strong> {customerInfo?.fullname || viewingAppointment.customer_name || "-"}</p>
+                        <p className="mb-1"><strong>Email:</strong> {customerInfo?.email || "N/A"}</p>
+                        <p className="mb-1"><strong>Phone:</strong> {customerInfo?.phone || "N/A"}</p>
                       </div>
+
+                      {/* Appointment & Status */}
+                      <h5 className="mb-2 text-primary">
+                        <FaCalendarAlt className="me-2" />
+                        Appointment & Status
+                      </h5>
+                      <div className="border rounded p-3 mb-4">
+                        <p className="mb-1">
+                          <strong>Date & Time:</strong> {viewingAppointment.appointment_date || "-"} @ {viewingAppointment.appointment_time || "-"}
+                        </p>
+                        <p className="mb-1">
+                          <strong>Duration:</strong> {viewingAppointment.slot_duration || 0} min
+                        </p>
+                        <p className="mb-1">
+                          <strong>Status:</strong>{" "}
+                          <span
+                            className={`fw-bold text-${viewingAppointment.status === 'approved'
+                              ? 'success'
+                              : viewingAppointment.status === 'pending'
+                                ? 'warning'
+                                : viewingAppointment.status === 'completed'
+                                  ? 'primary'
+                                  : 'danger'
+                              }`}
+                          >
+                            {viewingAppointment.status?.toUpperCase() || "PENDING"}
+                          </span>
+                        </p>
+                        <p className="mb-1">
+                          <strong>Price:</strong> ${viewingAppointment.total_price || '0.00'}
+                        </p>
+                      </div>
+
+                      {/* Customer Notes */}
+                      <h5 className="mb-2 text-primary">
+                        <FaStickyNote className="me-2" />
+                        Customer Message
+                      </h5>
+                      <div className="alert alert-secondary p-3 mb-0">
+                        {viewingAppointment.notes || "No message provided."}
+                      </div>
+
+                      {/* Action Buttons */}
+                      {(viewingAppointment.status === "pending" || viewingAppointment.status === "approved") && (
+                        <div className="mt-4 d-flex gap-2">
+                          {viewingAppointment.status === "pending" && (
+                            <>
+                              <Button variant="success" onClick={() => handleApprove(viewingAppointment)}>Approve</Button>
+                              <Button variant="danger" onClick={() => handleReject(viewingAppointment)}>Reject</Button>
+                            </>
+                          )}
+                          {viewingAppointment.status === "approved" && (
+                            <Button variant="primary" className="w-100" onClick={() => handleComplete(viewingAppointment)}>
+                              Mark as Completed
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="modal-footer">
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => setViewingAppointment(null)}
+                      >
+                        Close
+                      </button>
                     </div>
                   </div>
-                )}
-              </>
+                </div>
+              </div>
             )}
           </div>
         )}
+
         {/* Profile Tab */}
         {activeTab === "profile" && (
           <div>
-            <h5>My Profile</h5>
-            <ProfileSection
-              lawyer={loggedLawyer}
-              onSave={(updated) => {
-                setLoggedLawyer(updated);
-                localStorage.setItem("loggedInUser", JSON.stringify(updated));
-              }}
-            />
+            <h5 className="text-primary fw-bold">My Profile</h5>
+            <LawyerProfilePage />
+          </div>
+        )}
+        {/* Report Tab */}
+        {activeTab === "reports" && (
+          <div>
+            <h5 className="text-primary fw-bold">My Appointments Report</h5>
+            <LawyerAppointmentsReport />
           </div>
         )}
       </div>

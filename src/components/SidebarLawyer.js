@@ -13,7 +13,6 @@ const SidebarLawyer = ({ activeTab, setActiveTab, onLogout }) => {
     { id: "profile", icon: <FaUser />, label: "My Profile" },
     { id: "schedule", icon: <FaClock />, label: "Manage Schedules" }, // ✅ thêm dòng này
     { id: "appointments", icon: <FaCalendarAlt />, label: "Manage Appointments" },
-    { id: "documents", icon: <FaFileAlt />, label: "Documents" },
     { id: "reports", icon: <FaChartLine />, label: "Reports" },
   ];
 

@@ -50,7 +50,7 @@ function FeaturedLawyers() {
                 >
                   <div className="text-center mt-3">
                     <img
-                      src={`/${lawyer.image}`}
+                      src={`${lawyer.image}`}
                       alt={lawyer.name}
                       className="rounded-circle shadow-sm"
                       style={{

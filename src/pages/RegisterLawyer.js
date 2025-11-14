@@ -27,51 +27,34 @@ function RegisterLawyer() {
     image: null,
     degree_file: null,
     license_file: null,
-    certificates: null
+    certificates: null,
   });
 
-  // Convert file to Base64
-  const handleFileChange = (e, key) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFormData({
-        ...formData,
-        [key]: { name: file.name, type: file.type, data: reader.result },
-      });
-    };
-    reader.readAsDataURL(file);
+  const getFakeFilePath = (file) => {
+    if (!file) return null;
+    return `uploads/${Date.now()}-${file.name}`;
   };
 
-  // Convert image to Base64
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFormData({ ...formData, image: reader.result }); // Lưu Base64 string
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const newLawyer = {
-      ...formData,
-      lawyer_id: Date.now(),
-      rating: 0,
-      verify_status: false,
-      approve_by: null,
-      approve_at: null,
-      register_date: new Date().toISOString(),
-      status: "Pending",
-    };
-
     try {
+      const newLawyer = {
+        ...formData,
+        image: getFakeFilePath(formData.image),
+        degree_file: getFakeFilePath(formData.degree_file),
+        license_file: getFakeFilePath(formData.license_file),
+        certificates: getFakeFilePath(formData.certificates),
+        id: Date.now(),
+        rating: 0,
+        verify_status: false,
+        approve_by: null,
+        approve_at: null,
+        register_date: new Date().toISOString(),
+        status: "Pending",
+      };
+
       const res = await fetch(`${BASE_URL}/lawyers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,13 +62,13 @@ function RegisterLawyer() {
       });
 
       if (res.ok) {
-        alert("Registration successful! Please wait for admin approval.");
+        alert("✅ Registration successful! Please wait for admin approval.");
         navigate("/login");
       } else {
-        alert("Error while registering lawyer!");
+        alert("❌ Error while registering lawyer!");
       }
     } catch (err) {
-      alert("Cannot connect to server!");
+      alert("⚠️ Cannot connect to server!");
       console.error(err);
     } finally {
       setLoading(false);
@@ -158,6 +141,48 @@ function RegisterLawyer() {
               </Form.Group>
 
               <Row>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Phone</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Address</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={formData.address}
+                      onChange={(e) =>
+                        setFormData({ ...formData, address: e.target.value })
+                      }
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>City</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) =>
+                        setFormData({ ...formData, city: e.target.value })
+                      }
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Gender</Form.Label>
@@ -188,8 +213,27 @@ function RegisterLawyer() {
               </Row>
 
               <Form.Group className="mb-3">
+                <Form.Label>Profile Summary</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={4}
+                  placeholder="Write a short profile summary..."
+                  value={formData.profile_summary}
+                  onChange={(e) =>
+                    setFormData({ ...formData, profile_summary: e.target.value })
+                  }
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
                 <Form.Label>Profile Picture</Form.Label>
-                <Form.Control type="file" accept="image/*" onChange={handleImageChange} />
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setFormData({ ...formData, image: e.target.files[0] })
+                  }
+                />
               </Form.Group>
 
               <Form.Group className="mb-3">
@@ -215,7 +259,12 @@ function RegisterLawyer() {
                     <Form.Label>Degree File</Form.Label>
                     <Form.Control
                       type="file"
-                      onChange={(e) => handleFileChange(e, "degree_file")}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          degree_file: e.target.files[0],
+                        })
+                      }
                     />
                   </Form.Group>
                 </Col>
@@ -224,7 +273,12 @@ function RegisterLawyer() {
                     <Form.Label>License File</Form.Label>
                     <Form.Control
                       type="file"
-                      onChange={(e) => handleFileChange(e, "license_file")}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          license_file: e.target.files[0],
+                        })
+                      }
                     />
                   </Form.Group>
                 </Col>
@@ -233,7 +287,12 @@ function RegisterLawyer() {
                     <Form.Label>Certificates</Form.Label>
                     <Form.Control
                       type="file"
-                      onChange={(e) => handleFileChange(e, "certificates")}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          certificates: e.target.files[0],
+                        })
+                      }
                     />
                   </Form.Group>
                 </Col>

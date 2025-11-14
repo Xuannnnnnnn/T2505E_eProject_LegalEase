@@ -8,17 +8,40 @@ import {
   Spinner,
   Card,
   Form,
+  Row,
+  Col,
 } from "react-bootstrap";
 
 const BASE_URL = "http://localhost:3001";
 
 const ManageTransactionsPage = () => {
   const [transactions, setTransactions] = useState([]);
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // 🔹 Load toàn bộ dữ liệu
+  const [filters, setFilters] = useState({
+    customer: "",
+    lawyer: "",
+    status: "",
+    startDate: "",
+    endDate: "",
+  });
+
+  // 🔹 Mặc định lọc theo NĂM HIỆN TẠI
+  useEffect(() => {
+    const year = new Date().getFullYear();
+    const firstDayYear = new Date(year, 0, 1);
+    const lastDayYear = new Date(year, 11, 31);
+    setFilters((prev) => ({
+      ...prev,
+      startDate: firstDayYear.toISOString().split("T")[0],
+      endDate: lastDayYear.toISOString().split("T")[0],
+    }));
+  }, []);
+
+  // 🔹 Load dữ liệu
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -39,28 +62,29 @@ const ManageTransactionsPage = () => {
           resAppt.json(),
         ]);
 
-        // 🔹 Map transaction với appointment, customer và lawyer
         const mappedData = txData.map((t) => {
-        const appt = appointments.find(
-            (a) => Number(a.id) === Number(t.appointment_id)
-        );
-        const customer = customers.find(
-            (c) => String(c.id) === String(appt?.customer_id || t.customer_id)
-        );
-        const lawyer = lawyers.find(
-            (l) => String(l.id) === String(appt?.lawyer_id || t.lawyer_id)
-        );
+          const appt = appointments.find(
+            (a) => String(a.id) === String(t.appointment_id)
+          );
 
-        return {
+          const customer = customers.find(
+            (c) => String(c.id) === String(appt?.customer_id || t.customer_id)
+          );
+
+          const lawyer = lawyers.find(
+            (l) => String(l.id) === String(appt?.lawyer_id || t.lawyer_id)
+          );
+
+          return {
             ...t,
-            appointment_date: appt?.appointment_date || "",
+            appointment_date: appt?.appointment_date || t.date || "",
             customer_name: customer ? customer.fullname : "Unknown Customer",
             lawyer_name: lawyer ? lawyer.fullname || lawyer.name : "Unknown Lawyer",
-        };
+          };
         });
 
-
         setTransactions(mappedData);
+        setFilteredTransactions(mappedData);
       } catch (err) {
         console.error("Error loading data:", err);
       } finally {
@@ -71,7 +95,43 @@ const ManageTransactionsPage = () => {
     fetchData();
   }, []);
 
-  // 🔹 Cập nhật trạng thái thanh toán
+  // 🔹 Áp dụng bộ lọc
+  useEffect(() => {
+    let result = [...transactions];
+    const { customer, lawyer, status, startDate, endDate } = filters;
+
+    if (customer) {
+      result = result.filter((t) =>
+        t.customer_name.toLowerCase().includes(customer.toLowerCase())
+      );
+    }
+
+    if (lawyer) {
+      result = result.filter((t) =>
+        t.lawyer_name.toLowerCase().includes(lawyer.toLowerCase())
+      );
+    }
+
+    if (status) {
+      result = result.filter((t) => t.status.toLowerCase() === status.toLowerCase());
+    }
+
+    if (startDate) {
+      result = result.filter(
+        (t) => new Date(t.appointment_date) >= new Date(startDate)
+      );
+    }
+
+    if (endDate) {
+      result = result.filter(
+        (t) => new Date(t.appointment_date) <= new Date(endDate)
+      );
+    }
+
+    setFilteredTransactions(result);
+  }, [filters, transactions]);
+
+  // 🔹 Cập nhật trạng thái
   const handleStatusChange = async (t, newStatus) => {
     try {
       const res = await fetch(`${BASE_URL}/transactions/${t.id}`, {
@@ -79,6 +139,7 @@ const ManageTransactionsPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
+
       if (!res.ok) throw new Error("Failed to update status");
 
       setTransactions((prev) =>
@@ -105,6 +166,80 @@ const ManageTransactionsPage = () => {
           💰 Manage Transactions
         </Card.Header>
         <Card.Body>
+          {/* --- Bộ lọc --- */}
+          <div className="bg-light p-3 rounded-3 shadow-sm mb-4">
+            <Row>
+              <Col md={3}>
+                <Form.Group>
+                  <Form.Label>Customer</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter customer..."
+                    value={filters.customer}
+                    onChange={(e) =>
+                      setFilters((prev) => ({ ...prev, customer: e.target.value }))
+                    }
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={3}>
+                <Form.Group>
+                  <Form.Label>Lawyer</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter lawyer..."
+                    value={filters.lawyer}
+                    onChange={(e) =>
+                      setFilters((prev) => ({ ...prev, lawyer: e.target.value }))
+                    }
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={2}>
+                <Form.Group>
+                  <Form.Label>Status</Form.Label>
+                  <Form.Select
+                    value={filters.status}
+                    onChange={(e) =>
+                      setFilters((prev) => ({ ...prev, status: e.target.value }))
+                    }
+                  >
+                    <option value="">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Success">Success</option>
+                    <option value="Failed">Failed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={2}>
+                <Form.Group>
+                  <Form.Label>From</Form.Label>
+                  <Form.Control
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) =>
+                      setFilters((prev) => ({ ...prev, startDate: e.target.value }))
+                    }
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={2}>
+                <Form.Group>
+                  <Form.Label>To</Form.Label>
+                  <Form.Control
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) =>
+                      setFilters((prev) => ({ ...prev, endDate: e.target.value }))
+                    }
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+          </div>
+
+          {/* --- Bảng giao dịch --- */}
           <Table bordered hover responsive className="align-middle">
             <thead className="table-light">
               <tr>
@@ -118,57 +253,67 @@ const ManageTransactionsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {transactions.map((t, idx) => (
-                <tr key={t.id}>
-                  <td>{idx + 1}</td>
-                  <td>{t.customer_name}</td>
-                  <td>{t.lawyer_name}</td>
-                  <td>
-                    {t.appointment_date
-                      ? new Date(t.appointment_date).toLocaleDateString()
-                      : "-"}
-                  </td>
-                  <td>${t.amount?.toFixed(2) || "0.00"}</td>
-                  <td>
-                    <Badge
-                      bg={
-                        t.status === "Success"
-                          ? "success"
-                          : t.status === "Failed"
-                          ? "danger"
-                          : t.status === "Cancelled"
-                          ? "secondary"
-                          : "warning"
-                      }
-                    >
-                      {t.status}
-                    </Badge>
-                  </td>
-                  <td>
-                    <Form.Select
-                      size="sm"
-                      className="d-inline w-auto me-2"
-                      value={t.status}
-                      onChange={(e) => handleStatusChange(t, e.target.value)}
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Success">Success</option>
-                      <option value="Failed">Failed</option>
-                      <option value="Cancelled">Cancelled</option>
-                    </Form.Select>
-                    <Button
-                      size="sm"
-                      variant="info"
-                      onClick={() => {
-                        setSelectedTransaction(t);
-                        setShowModal(true);
-                      }}
-                    >
-                      View
-                    </Button>
+              {filteredTransactions.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center text-muted py-4">
+                    No matching records found.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredTransactions.map((t, idx) => (
+                  <tr key={t.id}>
+                    <td>{idx + 1}</td>
+                    <td>{t.customer_name}</td>
+                    <td>{t.lawyer_name}</td>
+                    <td>
+                      {t.appointment_date
+                        ? new Date(t.appointment_date).toLocaleDateString()
+                        : "-"}
+                    </td>
+                    <td>${t.amount?.toFixed(2) || "0.00"}</td>
+                    <td>
+                      <Badge
+                        bg={
+                          t.status === "Success"
+                            ? "success"
+                            : t.status === "Failed"
+                            ? "danger"
+                            : t.status === "Cancelled"
+                            ? "secondary"
+                            : "warning"
+                        }
+                      >
+                        {t.status}
+                      </Badge>
+                    </td>
+                    <td>
+                      <Form.Select
+                        size="sm"
+                        className="d-inline w-auto me-2"
+                        value={t.status}
+                        onChange={(e) => handleStatusChange(t, e.target.value)}
+                        disabled={t.status === "Success"}
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Success">Success</option>
+                        <option value="Failed">Failed</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </Form.Select>
+
+                      <Button
+                        size="sm"
+                        variant="info"
+                        onClick={() => {
+                          setSelectedTransaction(t);
+                          setShowModal(true);
+                        }}
+                      >
+                        View
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </Table>
         </Card.Body>
@@ -189,11 +334,9 @@ const ManageTransactionsPage = () => {
                 <strong>Lawyer:</strong> {selectedTransaction.lawyer_name}
               </p>
               <p>
-                <strong>Appointment Date:</strong>{" "}
+                <strong>Date:</strong>{" "}
                 {selectedTransaction.appointment_date
-                  ? new Date(
-                      selectedTransaction.appointment_date
-                    ).toLocaleString()
+                  ? new Date(selectedTransaction.appointment_date).toLocaleString()
                   : "N/A"}
               </p>
               <p>

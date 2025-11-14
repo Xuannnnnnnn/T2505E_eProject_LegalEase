@@ -30,6 +30,9 @@ import AdminExpenseManagementPage from "./pages/AdminExpenseManagementPage";
 // ✅ Styles
 import "bootstrap/dist/css/bootstrap.min.css";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import ManageLawyers from "./pages/ManageLawyers";
+import ManageCustomerPage from "./pages/ManageCustomerPage";
+import LawyerListPage from "./pages/LawyerListPage";
 
 
 function App() {
@@ -53,6 +56,7 @@ function App() {
 
           {/* Trang tìm kiếm luật sư */}
           <Route path="/search" element={<SearchLawyerPage />} />
+          <Route path="/lawyers" element={<LawyerListPage />} /> {/* ← thêm dòng này */}
 
           {/* Trang thông tin chi tiết luật sư */}
           <Route path="/lawyer/:id" element={<LawyerInformation />} />
@@ -103,6 +107,30 @@ function App() {
             element={
               <AdminProtectedRoute>
                 <AdminAppointments />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/manage-appointments"
+            element={
+              <AdminProtectedRoute>
+                <AdminAppointments />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/manage-lawyers"
+            element={
+              <AdminProtectedRoute>
+                <ManageLawyers />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/manage-customers"
+            element={
+              <AdminProtectedRoute>
+                <ManageCustomerPage />
               </AdminProtectedRoute>
             }
           />

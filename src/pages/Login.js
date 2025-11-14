@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+// src/pages/Login.jsx
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Form, Button } from "react-bootstrap";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+
+const BASE_URL = "http://localhost:3001";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,9 +17,18 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const BASE_URL = "http://localhost:3001";
+  // Lấy redirect info (nếu đến từ booking)
+  const navigateBack = location.state?.redirectBack;
+  const appointmentForm = location.state?.appointmentForm;
 
-  // ✅ Xử lý đăng nhập
+  useEffect(() => {
+    // Nếu pendingAppointment đã lưu trước đó, khởi tạo form lại
+    const pending = JSON.parse(localStorage.getItem("pendingAppointment"));
+    if (pending) {
+      setRole("customer"); // mặc định booking là customer
+    }
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -38,16 +50,13 @@ const Login = () => {
       localStorage.setItem("loggedInUser", JSON.stringify(user));
       localStorage.setItem("userRole", role);
 
-      // ✅ Nếu có redirect đặc biệt (ví dụ từ form đặt lịch)
-      if (location.state?.appointmentForm && location.state?.redirectBack) {
-        localStorage.setItem(
-          "pendingAppointment",
-          JSON.stringify(location.state.appointmentForm)
-        );
-        navigate(location.state.redirectBack);
+      // ✅ Nếu có redirect từ booking
+      if (appointmentForm && navigateBack) {
+        // Lưu tạm form để LawyerInformation mở modal
+        localStorage.setItem("pendingAppointment", JSON.stringify(appointmentForm));
+        navigate(navigateBack, { replace: true });
       } else {
-        // ✅ Mặc định: quay về trang chủ, KHÔNG vào dashboard
-        navigate("/");
+        navigate("/"); // không có redirect → trang chủ
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -57,7 +66,6 @@ const Login = () => {
     }
   };
 
-  // ✅ Khi bấm Register → chuyển theo quyền
   const handleGoToRegister = () => {
     if (role === "customer") navigate("/registercustomer");
     else navigate("/registerlawyer");
@@ -102,12 +110,7 @@ const Login = () => {
 
           {error && <div className="alert alert-danger">{error}</div>}
 
-          <Button
-            variant="primary"
-            type="submit"
-            className="w-100"
-            disabled={loading}
-          >
+          <Button variant="primary" type="submit" className="w-100" disabled={loading}>
             {loading ? "Processing..." : "Login"}
           </Button>
 

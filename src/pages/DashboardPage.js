@@ -11,6 +11,8 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
+import { Link } from "react-router-dom"; // <-- THÊM IMPORT NÀY
+import { useNavigate } from "react-router-dom"; // thêm import
 
 ChartJS.register(
   CategoryScale,
@@ -30,6 +32,8 @@ const DashboardPage = () => {
     totalCustomers: 0,
     totalAppointments: 0,
     totalTransactions: 0,
+    totalPending: 0, // <-- THÊM MỚI
+    totalAccepted: 0, // <-- THÊM MỚI
   });
   const [recentAppointments, setRecentAppointments] = useState([]);
   const [appointmentsPerLawyer, setAppointmentsPerLawyer] = useState({});
@@ -51,6 +55,22 @@ const DashboardPage = () => {
         const resTransactions = await fetch(`${BASE_URL}/transactions`);
         const transactions = await resTransactions.json();
 
+        // --- BẮT ĐẦU THAY ĐỔI LOGIC ---
+
+        // Tính toán số lượng lịch hẹn theo status
+        // LƯU Ý: Hãy thay 'Pending' và 'Accepted' bằng status chính xác trong CSDL của bạn
+        // (ví dụ: có thể là 'Confirmed', 'Approved', v.v.)
+        const pendingAppointments = appointments.filter(
+          (a) => a.status === "pending"
+        ).length;
+
+        const approvedAppointments = appointments.filter(
+          (a) => a.status === "approved"
+        ).length;
+
+
+        // --- KẾT THÚC THAY ĐỔI LOGIC ---
+
         // Map appointments với tên luật sư
         const mappedAppointments = appointments
           .map((a) => {
@@ -60,7 +80,9 @@ const DashboardPage = () => {
               lawyer_name: lawyer ? lawyer.name : "Unknown Lawyer",
             };
           })
-          .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))
+          .sort(
+            (a, b) => new Date(b.appointment_date) - new Date(a.appointment_date)
+          )
           .slice(0, 5);
 
         // Tính số appointments theo luật sư
@@ -83,6 +105,8 @@ const DashboardPage = () => {
           totalCustomers: customers.length,
           totalAppointments: appointments.length,
           totalTransactions: transactions.length,
+          totalPending: pendingAppointments, // <-- SET STATE MỚI
+          totalAccepted: approvedAppointments,
         });
         setRecentAppointments(mappedAppointments);
         setAppointmentsPerLawyer(perLawyer);
@@ -105,7 +129,7 @@ const DashboardPage = () => {
     );
   }
 
-  // Chart data
+  // Chart data (Không thay đổi)
   const barData = {
     labels: Object.keys(appointmentsPerLawyer),
     datasets: [
@@ -139,47 +163,75 @@ const DashboardPage = () => {
     <Container className="my-5">
       <h2 className="mb-4 text-primary">Dashboard</h2>
 
+      {/* --- BẮT ĐẦU THAY ĐỔI JSX CARDS --- */}
       <Row className="mb-4">
+        {/* Total Lawyers */}
         <Col md={3}>
-          <Card className="text-center shadow-sm p-3">
-            <Card.Body>
-              <Card.Title>Total Lawyers</Card.Title>
-              <Card.Text className="display-6">{stats.totalLawyers}</Card.Text>
-            </Card.Body>
-          </Card>
+          <Link to="/admin/manage-lawyers" style={{ textDecoration: "none" }}>
+            <Card className="text-center shadow-sm p-3 text-primary border-primary h-100">
+              <Card.Body>
+                <Card.Title>Total Lawyers</Card.Title>
+                <Card.Text className="display-6">{stats.totalLawyers}</Card.Text>
+              </Card.Body>
+            </Card>
+          </Link>
         </Col>
+        {/* Total Customers */}
         <Col md={3}>
-          <Card className="text-center shadow-sm p-3">
-            <Card.Body>
-              <Card.Title>Total Customers</Card.Title>
-              <Card.Text className="display-6">{stats.totalCustomers}</Card.Text>
-            </Card.Body>
-          </Card>
+          <Link to="/admin/manage-customers" style={{ textDecoration: "none" }}>
+            <Card className="text-center shadow-sm p-3 text-info border-info h-100">
+              <Card.Body>
+                <Card.Title>Total Customers</Card.Title>
+                <Card.Text className="display-6">{stats.totalCustomers}</Card.Text>
+              </Card.Body>
+            </Card>
+          </Link>
         </Col>
+
+        {/* THAY THẾ CARD "Total Appointments" VÀ "Total Transactions" */}
+        {/* Approved Appointments */}
         <Col md={3}>
-          <Card className="text-center shadow-sm p-3">
-            <Card.Body>
-              <Card.Title>Total Appointments</Card.Title>
-              <Card.Text className="display-6">{stats.totalAppointments}</Card.Text>
-            </Card.Body>
-          </Card>
+          <Link
+            to="/admin/manage-appointments?status=Accepted" // <-- Đổi path
+            style={{ textDecoration: "none" }}
+          >
+            <Card className="text-center shadow-sm p-3 text-success border-success h-100">
+              <Card.Body>
+                <Card.Title>Total Pending</Card.Title>
+                <Card.Text className="display-6">
+                  {stats.totalPending}
+                </Card.Text>
+              </Card.Body>
+            </Card>
+          </Link>
         </Col>
+        
         <Col md={3}>
-          <Card className="text-center shadow-sm p-3">
-            <Card.Body>
-              <Card.Title>Total Transactions</Card.Title>
-              <Card.Text className="display-6">{stats.totalTransactions}</Card.Text>
-            </Card.Body>
-          </Card>
+          <Link
+            to="/admin/manage-appointments?status=Approved"
+            style={{ textDecoration: "none" }}
+          >
+            <Card className="text-center shadow-sm p-3 text-success border-success h-100">
+              <Card.Body>
+                <Card.Title>Total Approved</Card.Title>
+                <Card.Text className="display-6">{stats.totalAccepted}</Card.Text>
+              </Card.Body>
+            </Card>
+          </Link>
         </Col>
+        
       </Row>
+      {/* --- KẾT THÚC THAY ĐỔI JSX CARDS --- */}
 
       <Row className="mb-4">
         <Col md={6}>
           <Card className="shadow-sm p-3">
             <Card.Body>
               <Card.Title>Appointments per Lawyer</Card.Title>
-              <Bar data={barData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
+              <Bar
+                data={barData}
+                options={{ responsive: true, plugins: { legend: { display: false } } }}
+              />
             </Card.Body>
           </Card>
         </Col>

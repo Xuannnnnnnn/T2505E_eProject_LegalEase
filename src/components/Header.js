@@ -28,15 +28,17 @@ const Header = () => {
     navigate("/");
   };
 
+  // Cập nhật: search từ Header sẽ dẫn đến LawyerListPage
   const handleSearch = (e) => {
     e.preventDefault();
     if (!keyword.trim()) return;
-    navigate(`/search?keyword=${encodeURIComponent(keyword)}`);
+    navigate(`/lawyers?keyword=${encodeURIComponent(keyword)}`);
     setShowSearch(false);
   };
 
+  // Cập nhật: click vào lĩnh vực dẫn đến LawyerListPage với specialization
   const handleSpecializationClick = (name) => {
-    navigate(`/search?specialization=${encodeURIComponent(name)}`);
+    navigate(`/lawyers?specialization=${encodeURIComponent(name)}`);
   };
 
   const handleNavigation = (path) => {
