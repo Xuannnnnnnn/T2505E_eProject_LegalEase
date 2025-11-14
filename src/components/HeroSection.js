@@ -1,26 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import specializationsData from "../data/specializations.json";
+import specializations from "../data/specializations.json";
 import "../App.css";
 
 const HeroSection = () => {
-  const [specializations, setSpecializations] = useState([]);
-  const [selectedSpecialization, setSelectedSpecialization] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [location, setLocation] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setSpecializations(specializationsData);
-  }, []);
-
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!selectedCategory && !location) return;
 
-    if (!selectedSpecialization && !location) return;
-
-    // Gửi query param thống nhất là "specialization" + "city"
     navigate(
-      `/search?specialization=${encodeURIComponent(selectedSpecialization)}&city=${encodeURIComponent(location)}`
+      `/search?specialization=${encodeURIComponent(selectedCategory)}&city=${encodeURIComponent(location)}`
     );
   };
 
@@ -48,13 +41,13 @@ const HeroSection = () => {
 
         <form className="hero-form" onSubmit={handleSubmit}>
           <select
-            value={selectedSpecialization}
-            onChange={(e) => setSelectedSpecialization(e.target.value)}
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
           >
             <option value="">Choose a Category</option>
-            {specializations.map((spec) => (
-              <option key={spec.specialization_id} value={spec.name}>
-                {spec.name}
+            {specializations.map((item) => (
+              <option key={item.specialization_id} value={item.name}>
+                {item.name}
               </option>
             ))}
           </select>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -9,12 +9,10 @@ const SearchLawyerPage = () => {
   const [lawyers, setLawyers] = useState([]);
   const [filtered, setFiltered] = useState([]);
 
-  // Lấy query params
   const query = new URLSearchParams(location.search);
-  const specialization = query.get("specialization") || "";
+  const specializationName = query.get("specialization") || "";
   const city = query.get("city") || "";
 
-  // Tải dữ liệu luật sư từ db.json
   useEffect(() => {
     fetch("http://localhost:3001/lawyers")
       .then((res) => res.json())
@@ -22,18 +20,15 @@ const SearchLawyerPage = () => {
       .catch((err) => console.log("Error loading:", err));
   }, []);
 
-  // Lọc lawyers theo specialization + city
   useEffect(() => {
     let result = lawyers;
-
-    if (specialization) {
+    if (specializationName) {
       result = result.filter(
         (lawyer) =>
           lawyer.specialization &&
-          lawyer.specialization.toLowerCase() === specialization.toLowerCase()
+          lawyer.specialization.toLowerCase() === specializationName.toLowerCase()
       );
     }
-
     if (city) {
       result = result.filter(
         (lawyer) =>
@@ -41,26 +36,26 @@ const SearchLawyerPage = () => {
           lawyer.city.toLowerCase() === city.toLowerCase()
       );
     }
-
     setFiltered(result);
-  }, [specialization, city, lawyers]);
+  }, [specializationName, city, lawyers]);
+
+  const handleViewProfile = (lawyerId) => {
+    navigate(`/lawyer/${lawyerId}`); // điều hướng sang trang profile
+  };
 
   return (
     <>
+      {/* HEADER */}
       <Header />
 
+      {/* MAIN CONTENT */}
       <div className="container py-4" style={{ minHeight: "70vh" }}>
         <h2 className="mb-3">Search Results</h2>
-
-        {/* Hiển thị điều kiện lọc */}
         <p className="text-secondary">
-          {specialization && <span>Category: <b>{specialization}</b> </span>}
+          {specializationName && <span>Specialization: <b>{specializationName}</b></span>}
           {city && <span> | City: <b>{city}</b></span>}
         </p>
-
         <hr />
-
-        {/* Nếu không có kết quả */}
         {filtered.length === 0 ? (
           <p className="text-danger">No lawyers found.</p>
         ) : (
@@ -79,7 +74,7 @@ const SearchLawyerPage = () => {
                   <p>⭐ {lawyer.rating}</p>
                   <button
                     className="btn btn-primary mt-2"
-                    onClick={() => navigate(`/lawyer/${lawyer.id}`)}
+                    onClick={() => handleViewProfile(lawyer.id)}
                   >
                     View Profile & Book
                   </button>
@@ -90,6 +85,7 @@ const SearchLawyerPage = () => {
         )}
       </div>
 
+      {/* FOOTER */}
       <Footer />
     </>
   );

@@ -7,11 +7,9 @@ const LegalEaseSection = () => {
   const [activeTab, setActiveTab] = useState("issue");
   const [visibleIssues, setVisibleIssues] = useState(15);
   const [visibleCities, setVisibleCities] = useState(15);
-
-  const [cities, setCities] = useState([]);   // 👈 lấy từ db.json
+  const [cities, setCities] = useState([]);
   const navigate = useNavigate();
 
-  // 🟦 LẤY CITY TỪ db.json (json-server hoặc API bạn đang dùng)
   useEffect(() => {
     fetch("http://localhost:3001/cities")
       .then((res) => res.json())
@@ -19,7 +17,6 @@ const LegalEaseSection = () => {
       .catch((err) => console.log("Error loading cities:", err));
   }, []);
 
-  // Chia mảng thành cột
   const chunkArray = (arr, size) => {
     const chunks = [];
     for (let i = 0; i < arr.length; i += size) {
@@ -34,12 +31,10 @@ const LegalEaseSection = () => {
   const issueColumns = chunkArray(visibleIssueItems, 5);
   const cityColumns = chunkArray(visibleCityItems, 5);
 
-  // Khi click issue
-  const handleCategoryClick = (categoryName) => {
-    navigate(`/search?category=${encodeURIComponent(categoryName)}`);
+  const handleCategoryClick = (specializationName) => {
+    navigate(`/search?specialization=${encodeURIComponent(specializationName)}`);
   };
 
-  // Khi click city
   const handleCityClick = (cityName) => {
     navigate(`/search?city=${encodeURIComponent(cityName)}`);
   };
@@ -50,7 +45,6 @@ const LegalEaseSection = () => {
         LegalEase Helps You Find the Right Lawyer!
       </h2>
 
-      {/* ---------- Tabs ---------- */}
       <ul className="nav nav-tabs justify-content-center mb-4" role="tablist">
         <li className="fs-3 nav-item">
           <button
@@ -71,8 +65,6 @@ const LegalEaseSection = () => {
       </ul>
 
       <div className="tab-content text-start mx-auto" style={{ maxWidth: "900px" }}>
-
-        {/* ---- TAB ISSUE ---- */}
         {activeTab === "issue" && (
           <div>
             <div className="row justify-content-center">
@@ -93,8 +85,6 @@ const LegalEaseSection = () => {
                 </div>
               ))}
             </div>
-
-            {/* Nút Show More / Less */}
             <div className="mt-3 text-center">
               {visibleIssues < specializations.length ? (
                 <button
@@ -117,7 +107,6 @@ const LegalEaseSection = () => {
           </div>
         )}
 
-        {/* ---- TAB CITY ---- */}
         {activeTab === "city" && (
           <div>
             <div className="row justify-content-center">
@@ -138,8 +127,6 @@ const LegalEaseSection = () => {
                 </div>
               ))}
             </div>
-
-            {/* Nút Show More / Less */}
             <div className="mt-3 text-center">
               {visibleCities < cities.length ? (
                 <button
@@ -161,7 +148,6 @@ const LegalEaseSection = () => {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
