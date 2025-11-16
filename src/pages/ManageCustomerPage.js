@@ -142,7 +142,7 @@ const ManageCustomerPage = () => {
   }
 
   return (
-    <div className="container my-5">
+    <div className="container my-0">
       <h3 className="fw-bold mb-4 text-primary">Manage Customers</h3>
 
       {/* Filters */}

@@ -29,6 +29,15 @@ const ManageTransactionsPage = () => {
     endDate: "",
   });
 
+  // 🔹 Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 8;
+
+  const indexOfLast = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirst = indexOfLast - ITEMS_PER_PAGE;
+  const currentItems = filteredTransactions.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+
   // 🔹 Mặc định lọc theo NĂM HIỆN TẠI
   useEffect(() => {
     const year = new Date().getFullYear();
@@ -131,6 +140,11 @@ const ManageTransactionsPage = () => {
     setFilteredTransactions(result);
   }, [filters, transactions]);
 
+  // ▶ Reset page khi filter thay đổi
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
   // 🔹 Cập nhật trạng thái
   const handleStatusChange = async (t, newStatus) => {
     try {
@@ -160,7 +174,7 @@ const ManageTransactionsPage = () => {
   }
 
   return (
-    <div className="container my-5">
+    <div className="container my-0">
       <Card className="shadow-sm">
         <Card.Header className="bg-primary text-white fw-bold">
           💰 Manage Transactions
@@ -253,16 +267,16 @@ const ManageTransactionsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.length === 0 ? (
+              {currentItems.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="text-center text-muted py-4">
                     No matching records found.
                   </td>
                 </tr>
               ) : (
-                filteredTransactions.map((t, idx) => (
+                currentItems.map((t, idx) => (
                   <tr key={t.id}>
-                    <td>{idx + 1}</td>
+                    <td>{indexOfFirst + idx + 1}</td>
                     <td>{t.customer_name}</td>
                     <td>{t.lawyer_name}</td>
                     <td>
@@ -316,6 +330,52 @@ const ManageTransactionsPage = () => {
               )}
             </tbody>
           </Table>
+
+          {/* --- Pagination --- */}
+          <div className="d-flex justify-content-center mt-3">
+            <nav>
+              <ul className="pagination">
+                {/* Previous */}
+                <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                  <button
+                    className="page-link"
+                    onClick={() => setCurrentPage((prev) => prev - 1)}
+                  >
+                    Previous
+                  </button>
+                </li>
+
+                {/* Page numbers */}
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <li
+                    key={i}
+                    className={`page-item ${currentPage === i + 1 ? "active" : ""}`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() => setCurrentPage(i + 1)}
+                    >
+                      {i + 1}
+                    </button>
+                  </li>
+                ))}
+
+                {/* Next */}
+                <li
+                  className={`page-item ${
+                    currentPage === totalPages ? "disabled" : ""
+                  }`}
+                >
+                  <button
+                    className="page-link"
+                    onClick={() => setCurrentPage((prev) => prev + 1)}
+                  >
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
         </Card.Body>
       </Card>
 

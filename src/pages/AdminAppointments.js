@@ -160,7 +160,7 @@ const AdminAppointments = () => {
   const customerList = [...new Set(appointments.map((a) => a.customer_name))];
 
   return (
-    <div className="container my-5">
+    <div className="container my-0">
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="fw-bold text-primary">Admin – Manage Appointments</h4>
         <button

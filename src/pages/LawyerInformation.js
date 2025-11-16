@@ -15,8 +15,10 @@ function LawyerInformation() {
   const [lawyer, setLawyer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false); // ✅ Modal chi tiết
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [appointments, setAppointments] = useState([]);
+
   const [form, setForm] = useState({
     appointment_date: "",
     appointment_time: "",
@@ -25,7 +27,9 @@ function LawyerInformation() {
     notes: "",
   });
 
+  // =============================
   // Lấy thông tin luật sư
+  // =============================
   useEffect(() => {
     const fetchLawyer = async () => {
       try {
@@ -48,7 +52,9 @@ function LawyerInformation() {
     fetchLawyer();
   }, [id]);
 
-  // Lấy danh sách appointment
+  // =============================
+  // Lấy appointment
+  // =============================
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -62,7 +68,9 @@ function LawyerInformation() {
     fetchAppointments();
   }, [id]);
 
-  // Kiểm tra pendingAppointment từ localStorage sau login
+  // =============================
+  // Check pendingAppointment
+  // =============================
   useEffect(() => {
     if (!lawyer) return;
     const pending = JSON.parse(localStorage.getItem("pendingAppointment"));
@@ -97,6 +105,9 @@ function LawyerInformation() {
     );
   }
 
+  // =============================
+  // Chọn Slot
+  // =============================
   const handleSelectSlot = (slot, date) => {
     const customer = JSON.parse(localStorage.getItem("loggedInUser"));
     if (!customer) {
@@ -123,6 +134,9 @@ function LawyerInformation() {
     setShowModal(true);
   };
 
+  // =============================
+  // Submit Appointment
+  // =============================
   const handleSubmit = async () => {
     const customer = JSON.parse(localStorage.getItem("loggedInUser"));
     if (!customer) {
@@ -165,28 +179,46 @@ function LawyerInformation() {
     }
   };
 
+  // =====================================================
+  // =================== RETURN UI ========================
+  // =====================================================
+
   return (
     <>
       <Header />
       <div className="container my-5">
+
+        {/* CARD INFO */}
         <div className="card shadow-lg border-0 rounded-4 overflow-hidden">
           <div className="row g-0">
             <div className="col-md-5">
-              <img src={`${lawyer.image}`} alt={lawyer.name} className="img-fluid h-100 w-100" style={{ objectFit: "cover" }} />
+              <img
+                src={`${lawyer.image}`}
+                alt={lawyer.name}
+                className="img-fluid h-100 w-100"
+                style={{ objectFit: "cover" }}
+              />
             </div>
+
             <div className="col-md-7 p-4">
               <h3 className="fw-bold text-primary">{lawyer.name}</h3>
               <p className="text-muted mb-2">{lawyer.city}</p>
               <p className="fw-semibold text-success">${lawyer.hourly_rate}/hour</p>
               <p>{lawyer.profile_summary}</p>
-              <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+
+              <button className="btn btn-primary me-2" onClick={() => setShowModal(true)}>
                 <FaCalendarAlt className="me-2" /> Book Appointment
+              </button>
+
+              {/* ⭐ Button View Details */}
+              <button className="btn btn-outline-secondary" onClick={() => setShowDetailModal(true)}>
+                View Details
               </button>
             </div>
           </div>
         </div>
 
-        {/* Modal Book Appointment */}
+        {/* ====================== MODAL BOOK APPOINTMENT ====================== */}
         {showModal && (
           <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
             <div className="modal-dialog modal-dialog-centered">
@@ -195,6 +227,7 @@ function LawyerInformation() {
                   <h5>Book Appointment with {lawyer.name}</h5>
                   <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
                 </div>
+
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -202,6 +235,7 @@ function LawyerInformation() {
                   }}
                 >
                   <div className="modal-body">
+
                     <label>Select Date:</label>
                     <input
                       type="date"
@@ -251,6 +285,7 @@ function LawyerInformation() {
                       onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     ></textarea>
                   </div>
+
                   <div className="modal-footer">
                     <button type="button" className="btn btn-outline-secondary" onClick={() => setShowModal(false)}>Cancel</button>
                     <button type="submit" className="btn btn-primary">Confirm</button>
@@ -260,6 +295,84 @@ function LawyerInformation() {
             </div>
           </div>
         )}
+
+        {/* ========================================================= */}
+        {/* ===================== MODAL VIEW DETAILS ================= */}
+        {/* ========================================================= */}
+        {showDetailModal && (
+          <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+            <div className="modal-dialog modal-lg modal-dialog-centered">
+              <div className="modal-content border-0 rounded-4">
+
+                <div className="modal-header">
+                  <h4 className="fw-bold">{lawyer.name}</h4>
+                  <button className="btn-close" onClick={() => setShowDetailModal(false)}></button>
+                </div>
+
+                <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+
+                  <div className="text-center mb-3">
+                    <img
+                      src={lawyer.image}
+                      alt={lawyer.name}
+                      className="rounded-circle mb-2"
+                      width={110}
+                      height={110}
+                      style={{ objectFit: "cover" }}
+                    />
+                    <h5 className="fw-bold mt-2">{lawyer.name}</h5>
+                    <p className="text-muted">{lawyer.city}</p>
+                    <p className="fw-semibold">{lawyer.specialization || "Family Law"}</p>
+                  </div>
+
+                  {/* Rating */}
+                  <h6 className="fw-bold">
+                    Rating ({lawyer.review_count || 21} users)
+                  </h6>
+
+                  <p className="fs-5 text-warning">
+                    {"★".repeat(Math.round(lawyer.rating || 5))}
+                    {"☆".repeat(5 - Math.round(lawyer.rating || 5))}
+                  </p>
+
+                  <div className="row mb-3">
+                    <div className="col-6">Good value for money</div>
+                    <div className="col-6 text-end text-warning">★★★★★</div>
+
+                    <div className="col-6">Would hire again</div>
+                    <div className="col-6 text-end">100%</div>
+
+                    <div className="col-6">Would recommend to friend</div>
+                    <div className="col-6 text-end">100%</div>
+                  </div>
+
+                  <hr />
+
+                  {/* Reviews list */}
+                  {lawyer.reviews?.map((r, index) => (
+                    <div key={index} className="mb-4">
+                      <p className="text-warning mb-1">★★★★★</p>
+                      <p className="fw-bold mb-1">
+                        by {r.author}, {r.date}
+                      </p>
+                      <p>{r.content}</p>
+                      <hr />
+                    </div>
+                  ))}
+
+                </div>
+
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={() => setShowDetailModal(false)}>
+                    Close
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
       <Footer />
     </>

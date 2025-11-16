@@ -192,7 +192,7 @@ const DashboardPage = () => {
         {/* Approved Appointments */}
         <Col md={3}>
           <Link
-            to="/admin/manage-appointments?status=Accepted" // <-- Đổi path
+            to="/admin/manage-appointments?status=Pending" // <-- Đổi path
             style={{ textDecoration: "none" }}
           >
             <Card className="text-center shadow-sm p-3 text-success border-success h-100">

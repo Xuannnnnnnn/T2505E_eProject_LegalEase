@@ -1,5 +1,4 @@
-import { Navbar, Container, Row, Col, Button } from "react-bootstrap";
-import { FaFacebookF, FaTwitter, FaLinkedinIn, FaYelp } from "react-icons/fa";
+import { Navbar, Container, Row, Col } from "react-bootstrap";
 
 // 🖼 import ảnh BBB logo từ thư mục images
 const Footer = () => {
@@ -18,17 +17,9 @@ const Footer = () => {
           </Navbar.Brand>
 
           <div className="footer-links small text-muted mb-2">
-            <a href="#!" className="text-decoration-none mx-2 text-dark">
-              User Agreement
-            </a>{" "}
-            •
-            <a href="#!" className="text-decoration-none mx-2 text-dark">
-              Privacy Policy
-            </a>{" "}
-            •
-            <a href="#!" className="text-decoration-none mx-2 text-dark">
-              Site Map
-            </a>
+            <span className="mx-2">User Agreement</span> •
+            <span className="mx-2">Privacy Policy</span> •
+            <span className="mx-2">Site Map</span>
           </div>
 
           <div className="text-muted">
@@ -38,7 +29,8 @@ const Footer = () => {
           </div>
 
           <p className="small text-muted mt-3 mb-0">
-            © 2025 LegalEase. All rights reserved.
+            © 2025 LegalEase. All rights reserved. All trademarks and logos are
+            property of their respective owners. Technical support by LegalEase IT Team.
           </p>
         </Container>
       </div>
@@ -54,7 +46,12 @@ const Footer = () => {
               <p className="text-muted mb-0">CASES POSTED</p>
             </Col>
             <Col md={4}>
-              <img src="images/bbb.png" alt="BBB Accredited" height="30" className="img-fluid" />
+              <img
+                src="images/bbb.png"
+                alt="BBB Accredited"
+                height="30"
+                className="img-fluid"
+              />
             </Col>
           </Row>
         </Container>
@@ -63,38 +60,11 @@ const Footer = () => {
       {/* --- PHẦN DƯỚI --- */}
       <div className="footer-bottom text-light py-4 bg-dark">
         <Container>
-          <Row className="align-items-center">
-            <Col md={6} className="text-md-start text-center mb-3 mb-md-0">
-              <h6 className="fw-bold mb-3">ATTORNEYS:</h6>
-              <Button variant="light" size="sm" className="me-2">
-                SIGN UP
-              </Button>
-              <Button variant="light" size="sm" className="me-2">
-                MARKET YOUR BUSINESS
-              </Button>
-              <Button variant="light" size="sm">
-                LOG IN
-              </Button>
-            </Col>
-
-            <Col md={6} className="text-md-end text-center">
-              <p className="mb-2 small text-uppercase">
-                Share the LegalEase experience:
+          <Row className="align-items-center text-center">
+            <Col>
+              <p className="mb-0 small">
+                Technical & Legal Support: LegalEase IT Team | © 2025 LegalEase. All rights reserved.
               </p>
-              <div className="d-flex justify-content-md-end justify-content-center gap-3 fs-5">
-                <a href="#!" className="text-light">
-                  <FaFacebookF />
-                </a>
-                <a href="#!" className="text-light">
-                  <FaYelp />
-                </a>
-                <a href="#!" className="text-light">
-                  <FaTwitter />
-                </a>
-                <a href="#!" className="text-light">
-                  <FaLinkedinIn />
-                </a>
-              </div>
             </Col>
           </Row>
         </Container>

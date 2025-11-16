@@ -1,6 +1,7 @@
+// AdminDashboard.js
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ thêm dòng này
-import { Container, Table, Button, Badge, Modal, Spinner } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
+import { Container, Spinner, Modal, Button } from "react-bootstrap";
 import SidebarAdmin from "../components/SidebarAdmin";
 import AdminExpenseManagementPage from "./AdminExpenseManagementPage";
 import ManageContentPage from "./ManageContentPage";
@@ -18,8 +19,9 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const navigate = useNavigate(); // ✅ thêm dòng này ngay đầu hàm
-  // ✅ Kiểm tra xem admin đã đăng nhập chưa
+  const navigate = useNavigate();
+
+  // Kiểm tra admin login
   useEffect(() => {
     const isAdmin = localStorage.getItem("isAdmin");
     if (!isAdmin) {
@@ -27,12 +29,13 @@ const AdminDashboard = () => {
     }
   }, [navigate]);
 
-  // ✅ Hàm đăng xuất
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem("isAdmin");
     navigate("/admin/login");
   };
-  // Fetch lawyers
+
+  // Fetch lawyers (chỉ khi tab lawyers active)
   useEffect(() => {
     const fetchLawyers = async () => {
       try {
@@ -84,13 +87,13 @@ const AdminDashboard = () => {
     alert("❌ Lawyer rejected!");
   };
 
-  // View lawyer details
+  // View lawyer
   const handleView = (lawyer) => {
     setSelectedLawyer(lawyer);
     setShowModal(true);
   };
 
-  // Render content theo tab
+  // Render tab
   const renderTab = () => {
     if (loading && activeTab === "lawyers") {
       return (
@@ -101,44 +104,68 @@ const AdminDashboard = () => {
     }
 
     switch (activeTab) {
+      case "dashboard":
+        return <DashboardPage />;
       case "lawyers":
-        return <ManageLawyers />;
-
+        return <ManageLawyers 
+                  lawyers={lawyers} 
+                  onApprove={handleApprove} 
+                  onReject={handleReject} 
+                  onView={handleView} 
+                />;
       case "fees":
         return <AdminExpenseManagementPage />;
-      
       case "content":
         return <ManageContentPage />;
-      
       case "appointments":
-      return <AdminAppointments />;
-
+        return <AdminAppointments />;
       case "customers":
-      return <ManageCustomerPage />;
-
+        return <ManageCustomerPage />;
       case "transactions":
-      return <ManageTransactionsPage />;
-
-      case "dashboard":
-      return <DashboardPage />;
-
+        return <ManageTransactionsPage />;
       default:
         return <div>Chọn tab bên trái để quản lý.</div>;
     }
   };
 
   return (
-    <div className="d-flex">
-      {/* 🟢 Thêm onLogout={handleLogout} ở đây */}
+    <div className="d-flex flex-column flex-lg-row min-vh-100">
+      {/* Sidebar */}
       <SidebarAdmin
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
       />
 
-      <Container fluid className="p-4">
+      {/* Main Content */}
+      <Container fluid className="p-4 flex-grow-1">
         {renderTab()}
       </Container>
+
+      {/* Modal xem chi tiết lawyer */}
+      {selectedLawyer && showModal && (
+        <Modal
+          show={showModal}
+          onHide={() => setShowModal(false)}
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>{selectedLawyer.name}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p><strong>Email:</strong> {selectedLawyer.email || "-"}</p>
+            <p><strong>Status:</strong> {selectedLawyer.status || "-"}</p>
+            <p><strong>Specialization:</strong> {selectedLawyer.specialization || "-"}</p>
+            <p><strong>City:</strong> {selectedLawyer.city || "-"}</p>
+            <p><strong>Profile Summary:</strong> {selectedLawyer.profile_summary || "-"}</p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowModal(false)}>
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
     </div>
   );
 };
