@@ -1,157 +1,189 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Table, Button, Modal, Form, Spinner } from "react-bootstrap";
 
 const BASE_URL = "http://localhost:3001";
 
 const ManageLawyers = () => {
   const [lawyers, setLawyers] = useState([]);
-  const [filteredLawyers, setFilteredLawyers] = useState([]);
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // Pagination
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  // Filters
-  const [nameFilter, setNameFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [specializationFilter, setSpecializationFilter] = useState("");
-  const [genderFilter, setGenderFilter] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [filters, setFilters] = useState({
+    name: "",
+    specialization: "",
+    gender: "",
+    status: "",
+    fromDate: "",
+    toDate: ""
+  });
 
-  // Default date range = current year
   useEffect(() => {
     const year = new Date().getFullYear();
-    setFromDate(new Date(year, 0, 1).toISOString().split("T")[0]);
-    setToDate(new Date(year, 11, 31).toISOString().split("T")[0]);
+    setFilters((p) => ({
+      ...p,
+      fromDate: new Date(year, 0, 1).toISOString().split("T")[0],
+      toDate: new Date(year, 11, 31).toISOString().split("T")[0],
+    }));
   }, []);
 
-  // Fetch lawyers
   useEffect(() => {
-    const fetchLawyers = async () => {
+    const fetchData = async () => {
       try {
         const res = await fetch(`${BASE_URL}/lawyers`);
-        const data = await res.json();
-        setLawyers(data || []);
-        setFilteredLawyers(data || []);
-      } catch (error) {
-        console.error("Error fetching lawyers:", error);
+        let data = await res.json();
+        if (!Array.isArray(data)) data = [];
+        
+        // --- SỬA LOGIC SẮP XẾP ---
+        // Ưu tiên "Pending" lên đầu, sau đó sắp xếp theo ngày đăng ký mới nhất
+        data.sort((a, b) => {
+          const aIsPending = (a.status || "Pending") === "Pending";
+          const bIsPending = (b.status || "Pending") === "Pending";
+
+          if (aIsPending && !bIsPending) {
+            return -1; // a (Pending) lên trước
+          }
+          if (!aIsPending && bIsPending) {
+            return 1; // b (Pending) lên trước
+          }
+
+          // Nếu cả hai cùng trạng thái, sắp xếp theo ngày đăng ký
+          return new Date(b.register_date) - new Date(a.register_date);
+        });
+        
+        setLawyers(data);
+      } catch (err) {
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchLawyers();
+    fetchData();
   }, []);
 
-  // Apply filters
-  useEffect(() => {
-    const filtered = (lawyers || []).filter((l) => {
-      const matchName = l.name?.toLowerCase().includes(nameFilter.toLowerCase());
-      const matchStatus = statusFilter ? (l.status || "").toLowerCase() === statusFilter.toLowerCase() : true;
-      const matchSpecialization = specializationFilter
-        ? (l.specialization || "").toLowerCase().includes(specializationFilter.toLowerCase())
-        : true;
-      const matchGender = genderFilter ? (l.gender || "").toLowerCase() === genderFilter.toLowerCase() : true;
+  const applyFilters = (list) => {
+    return list.filter((l) => {
+      const nameMatch = l.name?.toLowerCase().includes(filters.name.toLowerCase());
+      const specMatch = l.specialization?.toLowerCase().includes(filters.specialization.toLowerCase());
+      const genderMatch = filters.gender ? l.gender?.toLowerCase() === filters.gender.toLowerCase() : true;
+      const statusMatch = filters.status ? (l.status || "").toLowerCase() === filters.status.toLowerCase() : true;
 
-      let matchDate = true;
+      let dateMatch = true;
       const dateField = l.approve_at || l.register_date;
       if (dateField) {
         const d = new Date(dateField);
-        if (fromDate && d < new Date(fromDate)) matchDate = false;
-        if (toDate && d > new Date(toDate)) matchDate = false;
+        if (filters.fromDate && d < new Date(filters.fromDate)) dateMatch = false;
+        if (filters.toDate && d > new Date(filters.toDate)) dateMatch = false;
       }
 
-      return matchName && matchStatus && matchSpecialization && matchGender && matchDate;
+      return nameMatch && specMatch && genderMatch && statusMatch && dateMatch;
     });
+  };
 
-    setFilteredLawyers(filtered);
-    setCurrentPage(1);
-  }, [nameFilter, statusFilter, specializationFilter, genderFilter, fromDate, toDate, lawyers]);
-
-  // Pagination helpers
+  const filteredLawyers = useMemo(() => applyFilters(lawyers), [filters, lawyers]);
   const totalPages = Math.max(1, Math.ceil(filteredLawyers.length / itemsPerPage));
-  const currentItems = filteredLawyers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  const paginate = (p) => {
-  setCurrentPage(p);
-  window.scrollTo({ top: 0, behavior: "smooth" }); // <<< thêm dòng này
+  const currentItems = useMemo(() => {
+    return filteredLawyers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }, [filteredLawyers, currentPage]);
+
+  const patchLawyer = async (id, payload) => {
+    const res = await fetch(`${BASE_URL}/lawyers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Update failed");
+    return res.json();
   };
 
-  // Actions: view, approve, reject
-  const handleView = (lawyer) => {
-    setSelectedLawyer(lawyer);
-    setShowModal(true);
-  };
-
-  const handleApprove = async (lawyer) => {
-    const updated = {
+  const handleApprove = async (l) => {
+    const payload = {
       verify_status: true,
       status: "Approved",
       approve_at: new Date().toISOString(),
       approve_by: "Admin",
     };
     try {
-      await fetch(`${BASE_URL}/lawyers/${lawyer.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
-      setLawyers((prev) => prev.map((l) => (l.id === lawyer.id ? { ...l, ...updated } : l)));
-      alert("✅ Lawyer approved!");
-    } catch (err) {
-      console.error("Approve error:", err);
+      await patchLawyer(l.id, payload);
+      setLawyers((p) => p.map((x) => (x.id === l.id ? { ...x, ...payload } : x)));
+      alert("Approved!");
+    } catch (e) {
       alert("Failed to approve");
     }
   };
 
-  const handleReject = async (lawyer) => {
-    const updated = { verify_status: false, status: "Rejected" };
+  const handleReject = async (l) => {
+    const payload = { verify_status: false, status: "Rejected" };
     try {
-      await fetch(`${BASE_URL}/lawyers/${lawyer.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
-      setLawyers((prev) => prev.map((l) => (l.id === lawyer.id ? { ...l, ...updated } : l)));
-      alert("❌ Lawyer rejected!");
-    } catch (err) {
-      console.error("Reject error:", err);
+      await patchLawyer(l.id, payload);
+      setLawyers((p) => p.map((x) => (x.id === l.id ? { ...x, ...payload } : x)));
+      alert("Rejected!");
+    } catch (e) {
       alert("Failed to reject");
     }
   };
 
-  // Open file (support string path or base64 object)
-  const openFile = (file) => {
-    if (!file) return alert("No file available");
-    // If string path -> open in new tab (assume served statically)
-    if (typeof file === "string") {
-      const url = file.startsWith("http") || file.startsWith("/") ? file : `/${file}`;
-      window.open(url, "_blank");
-      return;
-    }
-
-    // If object with base64 data
-    if (file.data) {
-      const href = `data:${file.type || "application/octet-stream"};base64,${file.data}`;
-      const a = document.createElement("a");
-      a.href = href;
-      a.download = file.name || "file";
-      a.click();
-      return;
-    }
-
-    alert("Unsupported file format");
+  // --- 1. SỬA HÀM startEdit (Version 2.1) ---
+  // Chuyển tất cả giá trị sang string để Form.Control hoạt động ổn định
+  // Dùng ?? (nullish coalescing) để xử lý null/undefined
+  const startEdit = (l) => {
+    setEditingId(l.id);
+    setEditData({
+      hourly_rate: String(l.hourly_rate ?? ""), // (null, undefined, "") -> ""
+      rating: String(l.rating ?? 0), // (null, undefined, 0) -> "0"
+      experience_years: String(l.experience_years ?? ""),
+      cases_handled: String(l.cases_handled ?? ""),
+    });
   };
 
-  if (loading) {
-    return (
-      <div className="text-center mt-5">
-        <Spinner animation="border" variant="primary" />
-      </div>
-    );
-  }
+  // --- 2. SỬA HÀM saveEdit (Version 2.1) ---
+  // Chuyển đổi lại kiểu dữ liệu cho đúng với db.json
+  const saveEdit = async (id) => {
+    const payload = {
+      // LUÔN LƯU DƯỚI DẠNG STRING (giống db.json)
+      // Nếu editData.hourly_rate là "50" -> lưu "50"
+      // Nếu editData.hourly_rate là "" -> lưu ""
+      // Nếu editData.hourly_rate là "0" -> lưu "0"
+      hourly_rate: String(editData.hourly_rate ?? ""),
+      experience_years: String(editData.experience_years ?? ""),
+      cases_handled: String(editData.cases_handled ?? ""),
+      
+      // 'rating' là trường duy nhất luôn là SỐ
+      rating: Number(editData.rating) || 0,
+    };
+    try {
+      await patchLawyer(id, payload);
+      setLawyers((p) => p.map((x) => (x.id === id ? { ...x, ...payload } : x)));
+      setEditingId(null);
+      alert("Updated successfully");
+    } catch (e) {
+      alert("Update failed");
+    }
+  };
+
+  const resolveImage = (img) => {
+    if (!img) return null;
+    if (typeof img === "string") return img;
+    if (img.data) return `data:${img.type || "image/jpeg"};base64,${img.data}`;
+    return null;
+  };
+
+  const openFile = (file) => {
+    if (!file) return alert("No file");
+    if (typeof file === "string") return window.open(file, "_blank");
+    if (file.data) {
+      const link = document.createElement("a");
+      link.href = `data:${file.type};base64,${file.data}`;
+      link.download = file.name || "file";
+      link.click();
+    }
+  };
+
+  if (loading) return <div className="text-center mt-5"><Spinner animation="border" /></div>;
 
   return (
     <div className="container my-0">
@@ -160,23 +192,23 @@ const ManageLawyers = () => {
       {/* Filters */}
       <div className="d-flex flex-wrap gap-2 mb-3 align-items-end">
         <Form.Control
-          placeholder="Search by name"
-          value={nameFilter}
-          onChange={(e) => setNameFilter(e.target.value)}
-          style={{ width: "200px" }}
+          placeholder="Search name"
+          style={{ width: 180 }}
+          value={filters.name}
+          onChange={(e) => setFilters({ ...filters, name: e.target.value })}
         />
 
         <Form.Control
           placeholder="Specialization"
-          value={specializationFilter}
-          onChange={(e) => setSpecializationFilter(e.target.value)}
-          style={{ width: "200px" }}
+          style={{ width: 180 }}
+          value={filters.specialization}
+          onChange={(e) => setFilters({ ...filters, specialization: e.target.value })}
         />
 
         <Form.Select
-          value={genderFilter}
-          onChange={(e) => setGenderFilter(e.target.value)}
-          style={{ width: "150px" }}
+          style={{ width: 150 }}
+          value={filters.gender}
+          onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
         >
           <option value="">All Gender</option>
           <option value="Male">Male</option>
@@ -184,9 +216,9 @@ const ManageLawyers = () => {
         </Form.Select>
 
         <Form.Select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          style={{ width: "150px" }}
+          style={{ width: 150 }}
+          value={filters.status}
+          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
         >
           <option value="">All Status</option>
           <option value="Pending">Pending</option>
@@ -194,23 +226,32 @@ const ManageLawyers = () => {
           <option value="Rejected">Rejected</option>
         </Form.Select>
 
-        <div className="d-flex align-items-center gap-1">
-          <Form.Label className="m-0">From:</Form.Label>
-          <Form.Control type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-          <Form.Label className="m-0">To:</Form.Label>
-          <Form.Control type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        </div>
+        <Form.Control
+          type="date"
+          style={{ width: 160 }}
+          value={filters.fromDate}
+          onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
+        />
+
+        <Form.Control
+          type="date"
+          style={{ width: 160 }}
+          value={filters.toDate}
+          onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
+        />
 
         <Button
           variant="secondary"
           onClick={() => {
-            setNameFilter("");
-            setSpecializationFilter("");
-            setGenderFilter("");
-            setStatusFilter("");
             const year = new Date().getFullYear();
-            setFromDate(new Date(year, 0, 1).toISOString().split("T")[0]);
-            setToDate(new Date(year, 11, 31).toISOString().split("T")[0]);
+            setFilters({
+              name: "",
+              specialization: "",
+              gender: "",
+              status: "",
+              fromDate: new Date(year, 0, 1).toISOString().split("T")[0],
+              toDate: new Date(year, 11, 31).toISOString().split("T")[0],
+            });
           }}
         >
           Clear
@@ -218,16 +259,16 @@ const ManageLawyers = () => {
       </div>
 
       {/* Table */}
-      <Table striped bordered hover responsive className="mt-3">
+      <Table striped bordered hover responsive>
         <thead className="table-info text-center">
           <tr>
-            <th style={{ width: 60 }}>ID</th>
+            <th>ID</th>
             <th>Name</th>
             <th>Email</th>
             <th>Specialization</th>
-            <th>Exp (yrs)</th>
+            <th>Exp</th>
             <th>Cases</th>
-            <th>Rate ($/h)</th>
+            <th>Rate</th>
             <th>Rating</th>
             <th>Gender</th>
             <th>Status</th>
@@ -235,19 +276,19 @@ const ManageLawyers = () => {
             <th>Action</th>
           </tr>
         </thead>
-
         <tbody className="text-center align-middle">
-          {currentItems.length > 0 ? (
+          {currentItems.length ? (
             currentItems.map((l) => (
               <tr key={l.id}>
                 <td>{l.id}</td>
+
                 <td className="text-start">
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    {l.image && (
+                  <div className="d-flex align-items-center gap-2">
+                    {resolveImage(l.image) && (
                       <img
-                        src={typeof l.image === "string" && !l.image.startsWith("data:") ? l.image : (l.image?.data || l.image)}
+                        src={resolveImage(l.image)}
                         alt={l.name}
-                        style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 8 }}
+                        style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover" }}
                       />
                     )}
                     <div>
@@ -256,69 +297,144 @@ const ManageLawyers = () => {
                     </div>
                   </div>
                 </td>
+
                 <td>{l.email}</td>
                 <td>{l.specialization || "—"}</td>
-                <td>{l.experience_years ?? "—"}</td>
-                <td>{l.cases_handled ?? "—"}</td>
-                <td>{l.hourly_rate ? `$${l.hourly_rate}` : "—"}</td>
-                <td>{l.rating ?? "—"}</td>
+
+                <td>
+                  {editingId === l.id ? (
+                    <Form.Control
+                      size="sm"
+                      type="number"
+                      value={editData.experience_years}
+                      onChange={(e) => setEditData({ ...editData, experience_years: e.target.value })}
+                    />
+                  ) : (
+                    l.experience_years || "—"
+                  )}
+                </td>
+
+                <td>
+                  {editingId === l.id ? (
+                    <Form.Control
+                      size="sm"
+                      type="number"
+                      value={editData.cases_handled}
+                      onChange={(e) => setEditData({ ...editData, cases_handled: e.target.value })}
+                    />
+                  ) : (
+                    l.cases_handled || "—"
+                  )}
+                </td>
+
+                <td>
+                  {editingId === l.id ? (
+                    <Form.Control
+                      size="sm"
+                      type="number"
+                      value={editData.hourly_rate}
+                      onChange={(e) => setEditData({ ...editData, hourly_rate: e.target.value })}
+                    />
+                  ) : (
+                    l.hourly_rate ? `$${l.hourly_rate}` : "—"
+                  )}
+                </td>
+
+                <td>
+                  {editingId === l.id ? (
+                    <Form.Control
+                      size="sm"
+                      type="number"
+                      value={editData.rating}
+                      onChange={(e) => setEditData({ ...editData, rating: e.target.value })}
+                    />
+                  ) : (
+                    l.rating || 0
+                  )}
+                </td>
+
                 <td>{l.gender}</td>
                 <td>
                   <span
                     className={`badge ${
-                      l.status === "Approved" ? "bg-success" : l.status === "Rejected" ? "bg-danger" : "bg-secondary"
+                      l.status === "Approved"
+                        ? "bg-success"
+                        : l.status === "Rejected"
+                        ? "bg-danger"
+                        : "bg-secondary"
                     }`}
                   >
-                    {l.status ?? "Pending"}
+                    {l.status || "Pending"}
                   </span>
                 </td>
-                <td>{l.approve_at ? new Date(l.approve_at).toLocaleDateString() : "—"}</td>
-                <td>
-                  <Button variant="info" size="sm" className="me-2" onClick={() => handleView(l)}>
-                    View
-                  </Button>
 
-                  {l.status === "Pending" && (
+                <td>{l.approve_at ? new Date(l.approve_at).toLocaleDateString() : "—"}</td>
+
+                <td>
+                  {editingId === l.id ? (
                     <>
-                      <Button variant="success" size="sm" className="me-2" onClick={() => handleApprove(l)}>
-                        Approve
+                      <Button size="sm" variant="success" className="me-1" onClick={() => saveEdit(l.id)}>
+                        Save
                       </Button>
-                      <Button variant="danger" size="sm" onClick={() => handleReject(l)}>
-                        Reject
+                      <Button size="sm" variant="secondary" onClick={() => setEditingId(null)}>
+                        Cancel
                       </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button size="sm" variant="info" className="me-1" onClick={() => { setSelectedLawyer(l); setShowModal(true); }}>
+                        View
+                      </Button>
+                      <Button size="sm" variant="warning" className="me-1" onClick={() => startEdit(l)}>
+                        Edit
+                      </Button>
+                      {l.status === "Pending" && (
+                        <>
+                          <Button size="sm" variant="success" className="me-1" onClick={() => handleApprove(l)}>
+                            Approve
+                          </Button>
+                          <Button size="sm" variant="danger" onClick={() => handleReject(l)}>
+                            Reject
+                          </Button>
+                        </>
+                      )}
                     </>
                   )}
                 </td>
               </tr>
             ))
           ) : (
-            <tr>
-              <td colSpan={12} className="text-center">
-                No lawyers found.
-              </td>
-            </tr>
+            <tr><td colSpan={12}>No lawyers found.</td></tr>
           )}
         </tbody>
       </Table>
 
       {/* Pagination */}
       <div className="d-flex justify-content-center mt-3">
-        <Button variant="outline-primary" disabled={currentPage === 1} onClick={() => paginate(currentPage - 1)}>
+        <Button
+          variant="outline-primary"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((p) => p - 1)}
+        >
           Previous
         </Button>
 
-        {[...Array(totalPages).keys()].map((num) => (
+        {[...Array(totalPages).keys()].map((i) => (
           <Button
-            key={num + 1}
-            onClick={() => paginate(num + 1)}
+            key={i}
             className="mx-1"
-            variant={currentPage === num + 1 ? "primary" : "outline-primary"}
+            variant={currentPage === i + 1 ? "primary" : "outline-primary"}
+            onClick={() => setCurrentPage(i + 1)}
           >
-            {num + 1}
+            {i + 1}
           </Button>
         ))}
 
-        <Button variant="outline-primary" disabled={currentPage === totalPages} onClick={() => paginate(currentPage + 1)}>
+        <Button
+          variant="outline-primary"
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((p) => p + 1)}
+        >
           Next
         </Button>
       </div>
@@ -330,46 +446,41 @@ const ManageLawyers = () => {
         </Modal.Header>
 
         <Modal.Body>
-          {selectedLawyer ? (
+          {selectedLawyer && (
             <>
-              <div className="d-flex gap-3 align-items-start mb-3">
-                {selectedLawyer.image && (
+              <div className="d-flex gap-3 mb-3">
+                {resolveImage(selectedLawyer.image) && (
                   <img
-                    src={typeof selectedLawyer.image === "string" && !selectedLawyer.image.startsWith("data:") ? selectedLawyer.image : (selectedLawyer.image?.data || selectedLawyer.image)}
+                    src={resolveImage(selectedLawyer.image)}
                     alt={selectedLawyer.name}
-                    style={{ width: 140, height: 140, objectFit: "cover", borderRadius: 8 }}
+                    style={{ width: 140, height: 140, borderRadius: 8, objectFit: "cover" }}
                   />
                 )}
 
                 <div>
-                  <h4 className="mb-1">{selectedLawyer.name}</h4>
+                  <h4>{selectedLawyer.name}</h4>
                   <div className="text-muted mb-2">{selectedLawyer.specialization}</div>
                   <div className="mb-2">
-                    <strong>Rate:</strong> {selectedLawyer.hourly_rate ? `$${selectedLawyer.hourly_rate}/hr` : "—"} &nbsp; • &nbsp;
-                    <strong>Rating:</strong> {selectedLawyer.rating ?? "—"} &nbsp; • &nbsp;
-                    <strong>Experience:</strong> {selectedLawyer.experience_years ?? "—"} years
+                    <strong>Rate:</strong> {selectedLawyer.hourly_rate ? `$${selectedLawyer.hourly_rate}` : "—"}
+                    &nbsp; • &nbsp;
+                    <strong>Rating:</strong> {selectedLawyer.rating || 0}
+                    &nbsp; • &nbsp;
+                    <strong>Experience:</strong> {selectedLawyer.experience_years || "—"}
                   </div>
+
                   <div className="small text-muted">
-                    <strong>Cases handled:</strong> {selectedLawyer.cases_handled ?? "—"}
-                    <br />
-                    <strong>Verified:</strong> {selectedLawyer.verify_status ? "Yes" : "No"} {selectedLawyer.approve_by ? `• by ${selectedLawyer.approve_by}` : ""}
-                  </div>
-                  <div className="mt-2">
-                    <strong>Status:</strong>{" "}
-                    <span className={`badge ${selectedLawyer.status === "Approved" ? "bg-success" : selectedLawyer.status === "Rejected" ? "bg-danger" : "bg-secondary"}`}>
-                      {selectedLawyer.status ?? "Pending"}
-                    </span>
+                    <strong>Verified:</strong> {selectedLawyer.verify_status ? "Yes" : "No"}
+                    {selectedLawyer.approve_by && ` • by ${selectedLawyer.approve_by}`}
                   </div>
                 </div>
               </div>
 
-              <div className="mb-3">
-                <h6 className="fw-semibold">Profile Summary</h6>
-                <p className="text-muted">{selectedLawyer.profile_summary || "No summary provided."}</p>
-              </div>
-
               <Table bordered>
                 <tbody>
+                  <tr>
+                    <th>Email</th>
+                    <td>{selectedLawyer.email}</td>
+                  </tr>
                   <tr>
                     <th>Phone</th>
                     <td>{selectedLawyer.phone || "—"}</td>
@@ -382,43 +493,33 @@ const ManageLawyers = () => {
                     <th>Approved At</th>
                     <td>{selectedLawyer.approve_at ? new Date(selectedLawyer.approve_at).toLocaleString() : "—"}</td>
                   </tr>
-                  <tr>
-                    <th>Approve By</th>
-                    <td>{selectedLawyer.approve_by || "—"}</td>
-                  </tr>
                 </tbody>
               </Table>
 
-              <div className="mt-3">
-                <h6 className="fw-semibold">Documents</h6>
-                <div className="d-flex gap-2 flex-wrap">
-                  {selectedLawyer.degree_file ? (
-                    <Button variant="outline-primary" size="sm" onClick={() => openFile(selectedLawyer.degree_file)}>
-                      Download Degree
-                    </Button>
-                  ) : null}
-                  {selectedLawyer.license_file ? (
-                    <Button variant="outline-success" size="sm" onClick={() => openFile(selectedLawyer.license_file)}>
-                      Download License
-                    </Button>
-                  ) : null}
-                  {selectedLawyer.certificates ? (
-                    <Button variant="outline-warning" size="sm" onClick={() => openFile(selectedLawyer.certificates)}>
-                      Download Certificates
-                    </Button>
-                  ) : null}
-                </div>
+              <h6 className="fw-semibold mt-3">Documents</h6>
+              <div className="d-flex gap-2">
+                {selectedLawyer.degree_file && (
+                  <Button size="sm" variant="outline-primary" onClick={() => openFile(selectedLawyer.degree_file)}>
+                    Degree
+                  </Button>
+                )}
+                {selectedLawyer.license_file && (
+                  <Button size="sm" variant="outline-success" onClick={() => openFile(selectedLawyer.license_file)}>
+                    License
+                  </Button>
+                )}
+                {selectedLawyer.certificates && (
+                  <Button size="sm" variant="outline-warning" onClick={() => openFile(selectedLawyer.certificates)}>
+                    Certificates
+                  </Button>
+                )}
               </div>
             </>
-          ) : (
-            <p>No data.</p>
           )}
         </Modal.Body>
 
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Close
-          </Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Close</Button>
         </Modal.Footer>
       </Modal>
     </div>

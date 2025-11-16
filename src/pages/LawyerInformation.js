@@ -211,7 +211,11 @@ function LawyerInformation() {
               </button>
 
               {/* ⭐ Button View Details */}
-              <button className="btn btn-outline-secondary" onClick={() => setShowDetailModal(true)}>
+              <button
+                className="btn btn-warning fw-bold me-2"
+                style={{ boxShadow: "0 4px 8px rgba(0,0,0,0.2)" }}
+                onClick={() => setShowDetailModal(true)}
+              >
                 View Details
               </button>
             </div>
@@ -300,17 +304,25 @@ function LawyerInformation() {
         {/* ===================== MODAL VIEW DETAILS ================= */}
         {/* ========================================================= */}
         {showDetailModal && (
-          <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div
+            className="modal fade show"
+            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
             <div className="modal-dialog modal-lg modal-dialog-centered">
               <div className="modal-content border-0 rounded-4">
 
-                <div className="modal-header">
+                <div className="modal-header bg-warning text-dark">
                   <h4 className="fw-bold">{lawyer.name}</h4>
-                  <button className="btn-close" onClick={() => setShowDetailModal(false)}></button>
+                  <button
+                    className="btn-close"
+                    onClick={() => setShowDetailModal(false)}
+                  ></button>
                 </div>
 
-                <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto" }}>
-
+                <div
+                  className="modal-body"
+                  style={{ maxHeight: "75vh", overflowY: "auto" }}
+                >
                   <div className="text-center mb-3">
                     <img
                       src={lawyer.image}
@@ -325,11 +337,39 @@ function LawyerInformation() {
                     <p className="fw-semibold">{lawyer.specialization || "Family Law"}</p>
                   </div>
 
+                  {/* ⭐ Thông tin chi tiết */}
+                  <div className="mb-3">
+                    <p><strong>Email:</strong> {lawyer.email}</p>
+                    <p><strong>Phone:</strong> {lawyer.phone}</p>
+                    <p><strong>Address:</strong> {lawyer.address}</p>
+                    <p><strong>Experience:</strong> {lawyer.experience_years} years</p>
+                    <p><strong>Cases Handled:</strong> {lawyer.cases_handled}</p>
+                    <p><strong>Verify Status:</strong> {lawyer.verify_status ? "Verified" : "Not Verified"}</p>
+                    <p><strong>Other Info:</strong> {lawyer.other}</p>
+                    <p>
+                      <strong>Degree:</strong>{" "}
+                      <a href={`/files/${lawyer.degree_file}`} target="_blank" rel="noreferrer">
+                        View
+                      </a>
+                    </p>
+                    <p>
+                      <strong>License:</strong>{" "}
+                      <a href={`/files/${lawyer.license_file}`} target="_blank" rel="noreferrer">
+                        View
+                      </a>
+                    </p>
+                    <p>
+                      <strong>Certificates:</strong>{" "}
+                      <a href={`/files/${lawyer.certificates}`} target="_blank" rel="noreferrer">
+                        View
+                      </a>
+                    </p>
+                  </div>
+
                   {/* Rating */}
                   <h6 className="fw-bold">
                     Rating ({lawyer.review_count || 21} users)
                   </h6>
-
                   <p className="fs-5 text-warning">
                     {"★".repeat(Math.round(lawyer.rating || 5))}
                     {"☆".repeat(5 - Math.round(lawyer.rating || 5))}
@@ -363,7 +403,10 @@ function LawyerInformation() {
                 </div>
 
                 <div className="modal-footer">
-                  <button className="btn btn-secondary" onClick={() => setShowDetailModal(false)}>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setShowDetailModal(false)}
+                  >
                     Close
                   </button>
                 </div>

@@ -8,9 +8,9 @@ const SidebarAdmin = ({ activeTab, setActiveTab, onLogout }) => {
   const menuItems = [
     { id: "dashboard", icon: <FaTachometerAlt />, label: "Dashboard" },
     { id: "lawyers", icon: <FaUserTie />, label: "Manage Lawyers" },
-    { id: "transactions", icon: <FaExchangeAlt />, label: "Manage Transactions" },
     { id: "customers", icon: <FaUsers />, label: "Manage Customers" },
     { id: "appointments", icon: <FaCalendarAlt />, label: "Manage Appointments" },
+    { id: "transactions", icon: <FaExchangeAlt />, label: "Manage Transactions" },
     { id: "fees", icon: <FaFileInvoiceDollar />, label: "Manage Fees" },
     { id: "content", icon: <FaNewspaper />, label: "Manage Content" },
   ];

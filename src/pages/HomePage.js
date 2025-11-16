@@ -9,6 +9,8 @@ import ContactSection from "../components/ContactSection";
 import Footer from "../components/Footer";
 import LegalEaseSection from "../components/LegalEaseSection";
 import FindLawyerSection from "../components/FindLawyerSection";
+import BackToTop from "../components/BackToTop";
+
 
 const HomePage = () => {
   return (
@@ -23,6 +25,7 @@ const HomePage = () => {
       <FindLawyerSection />
       <ContactSection />
       <Footer />
+      <BackToTop />  
     </>
   );
 };
